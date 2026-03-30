@@ -1,1 +1,7 @@
-.env.local\n.env\nnode_modules/\ndist/\n.DS_Store\n.superpowers/\nandroid/app/build/
+.env.local
+.env
+node_modules/
+dist/
+.DS_Store
+.superpowers/
+android/app/build/
