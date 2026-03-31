@@ -3,8 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const MODEL_NAME = 'gemini-3.1-flash-lite-preview';
 
-// Pre-warm: fire a tiny request on load to establish TCP+TLS connection
-// This makes the first real generation much faster (saves ~1-2s handshake)
+// Pre-warm: establish TCP+TLS connection on load for faster first generation
 ai.models.generateContent({
   model: MODEL_NAME,
   contents: 'hi',
@@ -37,8 +36,9 @@ Use Tailwind CSS utility classes for all styling. Create rich, polished, visuall
 Use Google Fonts. Include the <link> tag in <head> and apply the font via an inline style on the <body> tag. Each lockscreen should feel typographically distinct.
 For icons, use Material Symbols: <span class="material-symbols-outlined">icon_name</span>.
 Use emojis generously for visual flair.
-NEVER use plain white or plain solid color backgrounds. Always create rich, atmospheric backgrounds using multi-stop CSS gradients (linear-gradient, radial-gradient), layered gradient combinations, or inline SVG patterns. Do NOT use any external images or URLs — use only CSS and SVG for all visuals.
-For foreground content, use backdrop-filter:blur and semi-transparent backgrounds to create depth and glass-like card effects.
+NEVER use plain white or plain solid color backgrounds. Always create atmospheric, layered backgrounds.
+For background images, use Unsplash: <img src="https://images.unsplash.com/photo-{ID}?w=800&q=80" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"> with a dark overlay on top for text readability. Use real Unsplash photo IDs you know. You can also use CSS gradients, inline SVGs, or emoji as decoration.
+For foreground content, use backdrop-filter:blur and semi-transparent backgrounds to create depth over the background image.
 
 RULES:
 This is a phone lockscreen, NOT a website. No navigation bars, no links, no forms, no footers, no sidebars, no buttons.
@@ -54,7 +54,14 @@ export async function* streamPageGeneration(
   prompt: string,
   abortSignal?: AbortSignal,
 ): AsyncGenerator<string> {
-  const userPrompt = `Generate a mobile lockscreen (portrait, single-column): ${prompt}`;
+  const userPrompt = `
+Generate a lockscreen based on this description:
+"${prompt}"
+
+Create a complete, visually stunning, full-screen lockscreen. Remember: 100vw × 100vh, no scroll, no web UI elements. This is art that informs.
+
+IMPORTANT: Design for a MOBILE phone screen (portrait, narrow viewport). Use a single-column layout. Keep text readable at phone scale.
+`;
 
   try {
     const responseStream = await ai.models.generateContentStream({
