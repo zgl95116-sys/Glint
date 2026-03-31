@@ -37,7 +37,7 @@ Use Google Fonts. Include the <link> tag in <head> and apply the font via an inl
 For icons, use Material Symbols: <span class="material-symbols-outlined">icon_name</span>.
 Use emojis generously for visual flair.
 NEVER use plain white or plain solid color backgrounds. Always create atmospheric, layered backgrounds.
-For background images, use Unsplash: <img src="https://images.unsplash.com/photo-{ID}?w=800&q=80" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"> with a dark overlay on top for text readability. Use real Unsplash photo IDs you know. You can also use CSS gradients, inline SVGs, or emoji as decoration.
+For background images, use this URL pattern with keywords: <img src="https://source.unsplash.com/featured/720x1280/?keyword" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"> Replace "keyword" with a relevant English word like sunrise, rain, night-sky, coffee, city, stars, forest, ocean, etc. Always add a dark semi-transparent overlay div on top of the image for text readability. You can also use CSS gradients, inline SVGs, or emoji as decoration.
 For foreground content, use backdrop-filter:blur and semi-transparent backgrounds to create depth over the background image.
 
 RULES:
