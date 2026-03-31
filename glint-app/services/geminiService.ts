@@ -37,7 +37,7 @@ Use Google Fonts. Include the <link> tag in <head> and apply the font via an inl
 For icons, use Material Symbols: <span class="material-symbols-outlined">icon_name</span>.
 Use emojis generously for visual flair.
 NEVER use plain white or plain solid color backgrounds. Always create atmospheric, layered backgrounds.
-For background images, use this URL pattern with keywords: <img src="https://source.unsplash.com/featured/720x1280/?keyword" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"> Replace "keyword" with a relevant English word like sunrise, rain, night-sky, coffee, city, stars, forest, ocean, etc. Always add a dark semi-transparent overlay div on top of the image for text readability. You can also use CSS gradients, inline SVGs, or emoji as decoration.
+For background images, use: <img src="https://picsum.photos/720/1280.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"> This returns a random high-quality photo. Always add a dark semi-transparent overlay div (background:rgba(0,0,0,0.5)) on top of the image for text readability. You can also use CSS gradients, inline SVGs, or emoji as decoration.
 For foreground content, use backdrop-filter:blur and semi-transparent backgrounds to create depth over the background image.
 
 RULES:
