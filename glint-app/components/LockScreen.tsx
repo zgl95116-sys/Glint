@@ -8,8 +8,18 @@ interface LockScreenProps {
 }
 
 export const LockScreen: React.FC<LockScreenProps> = ({ htmlContent, isLoading, onBack }) => {
+  const showLoading = isLoading && !htmlContent;
+
   return (
     <div className="lock-screen">
+      {/* Loading state before first chunk arrives */}
+      {showLoading && (
+        <div className="lock-loading">
+          <div className="lock-loading-pulse" />
+          <div className="lock-loading-text">正在生成...</div>
+        </div>
+      )}
+
       {/* AI generated content — full screen */}
       <Sandbox htmlContent={htmlContent} />
 

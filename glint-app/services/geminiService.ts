@@ -3,6 +3,14 @@ import { GoogleGenAI } from '@google/genai';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const MODEL_NAME = 'gemini-3.1-flash-lite-preview';
 
+// Pre-warm: fire a tiny request on load to establish TCP+TLS connection
+// This makes the first real generation much faster (saves ~1-2s handshake)
+ai.models.generateContent({
+  model: MODEL_NAME,
+  contents: 'hi',
+  config: { maxOutputTokens: 1 },
+}).catch(() => {});
+
 const SYSTEM_PROMPT = `
 You are powered by Gemini 3.1 Flash-Lite. You generate complete mobile lockscreen interfaces as HTML documents.
 
@@ -47,14 +55,7 @@ export async function* streamPageGeneration(
   prompt: string,
   abortSignal?: AbortSignal,
 ): AsyncGenerator<string> {
-  const userPrompt = `
-Generate a lockscreen based on this description:
-"${prompt}"
-
-Create a complete, visually stunning, full-screen lockscreen. Remember: 100vw × 100vh, no scroll, no web UI elements. This is art that informs.
-
-IMPORTANT: Design for a MOBILE phone screen (portrait, narrow viewport). Use a single-column layout. Keep text readable at phone scale.
-`;
+  const userPrompt = `Generate a mobile lockscreen (portrait, single-column): ${prompt}`;
 
   try {
     const responseStream = await ai.models.generateContentStream({
