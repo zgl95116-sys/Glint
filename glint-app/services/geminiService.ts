@@ -45,6 +45,41 @@ const ART_DIRECTIONS = [
   },
 ];
 
+const VISUAL_MOTIFS = [
+  {
+    title: '发光圆环',
+    guidance: '做一个会主导画面的巨大圆环、日轮或光晕装置，让时间嵌入其中，而不是孤零零摆在屏幕上。',
+  },
+  {
+    title: '折纸丝带',
+    guidance: '做出纸张折叠、丝带穿插或裁切边缘的感觉，让画面有立体层次和转折。',
+  },
+  {
+    title: '轨道与星图',
+    guidance: '用轨道线、星图、坐标、弧线和节点制造秩序感，让信息像围绕某个核心运行。',
+  },
+  {
+    title: '液态金属',
+    guidance: '用流动的金属感、镜面高光或液态形状作为主视觉，画面应该先让人看到“物体”，再看到文字。',
+  },
+  {
+    title: '花瓣叠层',
+    guidance: '用多层半透明花瓣、叶片、羽毛或云片叠出深度，让文字像停在这些层之间。',
+  },
+  {
+    title: '屏风边框',
+    guidance: '用边框、角标、印章、窗格或屏风结构形成一个仪式感很强的舞台。',
+  },
+  {
+    title: '波纹与声场',
+    guidance: '用波纹、声场、震荡线或等高线做视觉主角，让时间像在声音或空气中浮现。',
+  },
+  {
+    title: '几何器物',
+    guidance: '画面中心有一个明确的几何器物、雕塑、容器或徽章，让锁屏像一件被展示的对象。',
+  },
+];
+
 function pickRandom<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)];
 }
@@ -115,6 +150,9 @@ Include exactly these layers:
 
 Aim for poster, editorial cover, cinematic interface, or art print energy.
 Favor asymmetry, contrast, hierarchy, and safe mobile spacing.
+The screen must NOT be mostly text. A large non-text visual device must occupy a meaningful part of the composition.
+The time can merge into the visual device, but time alone is not enough.
+Use CSS art or inline SVG to create an object, structure, field, or atmosphere that people notice before they start reading.
 
 RULES:
 This is a phone lockscreen, NOT a website. No navigation bars, no links, no forms, no footers, no sidebars, no buttons.
@@ -127,6 +165,9 @@ AVOID:
 - evenly stacked generic glass cards
 - layouts that look like a weather app, calendar app, or dashboard homepage
 - four or more unrelated widget blocks
+- long text paragraphs or explanatory copy
+- making typography the only visual idea
+- simple top-to-bottom flex columns with a few text cards
 - decorative clutter without hierarchy
 
 CONTENT:
@@ -142,6 +183,7 @@ export async function* streamPageGeneration(
 ): AsyncGenerator<string> {
   const moment = getMomentContext();
   const artDirection = pickRandom(ART_DIRECTIONS);
+  const visualMotif = pickRandom(VISUAL_MOTIFS);
 
   const userPrompt = `
 请生成这个时刻的锁屏。
@@ -150,7 +192,8 @@ export async function* streamPageGeneration(
 日期：${moment.date}
 氛围：${moment.phase}
 艺术方向：${artDirection.title}。${artDirection.guidance}
-要求：时间是主角；先抓人再传达；辅助信息不超过 3 组；加入一个记忆点；保证手机竖屏安全区。
+视觉母题：${visualMotif.title}。${visualMotif.guidance}
+要求：时间是主角；先抓人再传达；辅助信息不超过 3 组；除时间日期外文字尽量少，不要段落；必须有一个大块非文字视觉主体；保证手机竖屏安全区。
 `;
 
   try {
