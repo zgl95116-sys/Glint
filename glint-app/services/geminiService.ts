@@ -37,9 +37,8 @@ Use Tailwind CSS utility classes for all styling. Create rich, polished, visuall
 Use Google Fonts. Include the <link> tag in <head> and apply the font via an inline style on the <body> tag. Each lockscreen should feel typographically distinct.
 For icons, use Material Symbols: <span class="material-symbols-outlined">icon_name</span>.
 Use emojis generously for visual flair.
-NEVER use plain white or plain solid color backgrounds. Always create atmospheric, layered backgrounds.
-For background images, use Unsplash: <img src="https://images.unsplash.com/photo-{ID}?w=800&q=80" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"> with a dark overlay on top for text readability. Use real Unsplash photo IDs you know. You can also use CSS gradients, inline SVGs, or emoji as decoration.
-For foreground content, use backdrop-filter:blur and semi-transparent backgrounds to create depth over the background image.
+NEVER use plain white or plain solid color backgrounds. Always create rich, atmospheric backgrounds using multi-stop CSS gradients (linear-gradient, radial-gradient), layered gradient combinations, or inline SVG patterns. Do NOT use any external images or URLs — use only CSS and SVG for all visuals.
+For foreground content, use backdrop-filter:blur and semi-transparent backgrounds to create depth and glass-like card effects.
 
 RULES:
 This is a phone lockscreen, NOT a website. No navigation bars, no links, no forms, no footers, no sidebars, no buttons.

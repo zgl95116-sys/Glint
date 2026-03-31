@@ -152,7 +152,7 @@ html, body, #root {
   display: block;
 }
 
-/* Loading state — shown before first chunk */
+/* Loading state — a placeholder lockscreen */
 .lock-loading {
   position: absolute;
   inset: 0;
@@ -160,31 +160,51 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
+  justify-content: flex-start;
+  padding-top: 25vh;
+  gap: 8px;
   background:
-    radial-gradient(ellipse at 40% 30%, rgba(100, 60, 180, 0.25) 0%, transparent 60%),
-    radial-gradient(ellipse at 60% 70%, rgba(40, 80, 160, 0.2) 0%, transparent 50%),
-    #060610;
+    radial-gradient(ellipse at 30% 0%, rgba(120, 80, 200, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 100%, rgba(40, 100, 180, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(60, 20, 80, 0.15) 0%, transparent 70%),
+    #08080f;
 }
 
-.lock-loading-pulse {
-  width: 48px;
-  height: 48px;
+.lock-loading-time {
+  font-size: 72px;
+  font-weight: 200;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: -2px;
+  line-height: 1;
+}
+
+.lock-loading-date {
+  font-size: 16px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 30vh;
+}
+
+.lock-loading-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 1px;
+}
+
+.lock-loading-dot {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  animation: loadPulse 1.2s ease-in-out infinite;
+  background: rgba(255, 255, 255, 0.4);
+  animation: dotPulse 1.2s ease-in-out infinite;
 }
 
-@keyframes loadPulse {
-  0%, 100% { transform: scale(0.85); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 1; }
-}
-
-.lock-loading-text {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.4);
-  letter-spacing: 2px;
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
 }
 
 .lock-back-pill {

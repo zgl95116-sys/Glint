@@ -12,11 +12,19 @@ export const LockScreen: React.FC<LockScreenProps> = ({ htmlContent, isLoading, 
 
   return (
     <div className="lock-screen">
-      {/* Loading state before first chunk arrives */}
+      {/* Loading state — a beautiful placeholder lockscreen */}
       {showLoading && (
         <div className="lock-loading">
-          <div className="lock-loading-pulse" />
-          <div className="lock-loading-text">正在生成...</div>
+          <div className="lock-loading-time">
+            {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })}
+          </div>
+          <div className="lock-loading-date">
+            {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
+          </div>
+          <div className="lock-loading-hint">
+            <div className="lock-loading-dot" />
+            Glint 正在为你生成...
+          </div>
         </div>
       )}
 
