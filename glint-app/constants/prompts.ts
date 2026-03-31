@@ -5,35 +5,35 @@ export interface PresetPrompt {
 
 export const PRESET_PROMPTS: PresetPrompt[] = [
   {
-    label: '早晨 · 日出与今日计划',
-    prompt: 'A sunrise morning lockscreen. Show the current time prominently, a beautiful dawn gradient sky with subtle cloud SVGs, today\'s date, a warm greeting, weather info (22°C, sunny), and 2-3 upcoming schedule items. Calm, fresh, optimistic mood.',
+    label: '早安 · 你的一天从这里开始',
+    prompt: '早晨7:15的锁屏。用户叫小林，是一名产品经理。AI已经知道他每天早上会看天气和日程。展示：温暖的早安问候，今天北京天气22°C晴，AQI优，适合穿轻薄外套；今日3个日程（10:00产品评审会、14:00设计走查、16:30周会）；AI主动提醒"昨晚你关注的GPT-5发布了，已为你整理摘要"。整体清新温暖。',
   },
   {
-    label: '雨天 · 窗外的雨和一杯咖啡',
-    prompt: 'A rainy day lockscreen. Cool blue-grey palette with animated-feeling rain streaks (CSS), a cozy coffee cup illustration via SVG, current time in a soft serif font, a short poetic line about rain, and maybe today\'s reading recommendation. Warm and introspective mood.',
+    label: '通勤 · AI已为你规划好路线',
+    prompt: '早上8:30的通勤锁屏。用户正在去公司的路上。AI根据历史习惯知道用户每天8:20出门坐地铁。展示：当前时间，地铁13号线实时状态（正常运行），预计到达时间9:05，途中推荐继续听昨天没听完的播客《硅谷101》第34期，今天第一个会议10:00还有充裕时间。信息紧凑实用。',
   },
   {
-    label: '深夜 · 星空与今日回顾',
-    prompt: 'A late night lockscreen under a starry sky. Deep navy/purple gradient with small star dots (CSS), the time in thin elegant font, a "today in review" section with 2-3 highlights, tomorrow\'s first event as a gentle reminder. Peaceful, reflective mood.',
+    label: '工作间隙 · 3条消息值得你看',
+    prompt: '下午3:20的锁屏。用户是产品经理，AI从各个App中帮他筛选了重要信息。展示：3条AI精选摘要——①飞书群里张总提到了你负责的项目要提前上线 ②脉脉热帖"2026年产品经理还有前途吗"讨论度很高 ③你关注的苹果WWDC日期确认了。AI备注"其余47条消息已过滤，无需处理"。',
   },
   {
-    label: '科技资讯 · 今日 AI 大事件',
-    prompt: 'A tech news lockscreen. Dark futuristic design with accent colors (cyan/electric blue), bold headline typography, 3-4 fictional but realistic AI news headlines with one-line summaries, current time, a "trending" indicator. Sharp, information-dense, editorial feel.',
+    label: '午餐 · 今天吃什么？',
+    prompt: '中午12:00的锁屏。AI知道用户在望京SOHO上班，平时午餐喜欢吃日料和川菜。展示：3个AI推荐——①松子日料（步行5分钟，你上次给了好评）②辣庄火锅（新开的，同事群里有人推荐）③减脂沙拉（你本周已经吃了3次火锅，注意健康哦）。附带美团优惠信息。氛围轻松有食欲。',
   },
   {
-    label: '春节 · 红色喜庆倒计时',
-    prompt: 'A Chinese New Year celebration lockscreen. Rich red and gold palette, decorative SVG patterns (lanterns, fireworks, cloud motifs), a large countdown or greeting text, the time in a decorative font, a short blessing phrase. Festive, joyous, culturally rich.',
+    label: '快递到了 · 你的包裹正在派送',
+    prompt: '下午4:45的事件触发锁屏。用户有一个快递正在派送中。展示：快递状态——京东快递，你买的AirPods Pro 3，快递员已到小区，预计5分钟内送达，快递员电话尾号1234。AI提醒"要不要让快递放到丰巢？你上次也是这样处理的"。同时显示今日天气和时间。有惊喜感和及时性。',
   },
   {
-    label: '音乐 · 正在听的歌词可视化',
-    prompt: 'A music visualization lockscreen. Abstract sound wave patterns via CSS/SVG, a fictional song title and artist prominently displayed, 2-3 lines of lyrics floating on screen, album-art-like gradient background, the time subtly placed. Immersive, artistic, rhythmic.',
+    label: '下午 · 你平时这会儿刷脉脉',
+    prompt: '下午3:00的锁屏。AI通过学习用户行为发现，用户每天下午3点左右会打开脉脉看看行业动态。AI主动从脉脉抓取了3条热帖摘要：①"字节跳动内部AI工具曝光"（2.3万讨论）②"35岁程序员转产品经理的真实经历" ③"2026金三银四，offer对比帖"。展示为精美的信息流卡片，用户无需打开App就能一览。',
   },
   {
-    label: '极简 · 只有时间和一句诗',
-    prompt: 'An ultra-minimal lockscreen. Almost entirely blank with a single elegant background color or very subtle gradient. Only two elements: the current time in a beautiful typeface (large, centered), and one short poetic line below it. Nothing else. Maximum whitespace. Zen-like calm.',
+    label: '睡前 · 今日回顾与明日预告',
+    prompt: '晚上11:30的睡前锁屏。星空或深色夜晚氛围。展示：今日回顾——屏幕使用5小时23分钟，走了8420步，完成了3个待办；AI总结"今天效率不错，产品评审会上你的方案被采纳了"。明日提醒：9:00有客户拜访，记得带名片。底部一句晚安语"早点休息，明天又是新的一天"。温暖治愈。',
   },
   {
-    label: '赛博朋克 · 霓虹信息矩阵',
-    prompt: 'A cyberpunk lockscreen. Black background with neon magenta/cyan/yellow accents, glitch-style text effects via CSS, a matrix of fictional data readouts (battery, network, location coordinates, system status), the time in a monospace font, scan-line overlay effect. High-tech, edgy, dense.',
+    label: '生日 · 有人在想你',
+    prompt: '这是一个特殊事件触发的锁屏——今天是用户好朋友李明的生日。AI从通讯录和社交媒体中发现了这个信息。展示：温馨的生日提醒界面，显示"今天是李明的生日🎂"，你们的合影回忆（用emoji和CSS艺术代替），AI建议"要不要发条微信祝福？上次他生日你送了一本书"。附带一键祝福的提示。温馨有人情味。',
   },
 ];
