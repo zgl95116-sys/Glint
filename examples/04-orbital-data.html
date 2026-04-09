@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+<meta name="color-scheme" content="dark">
+<style>
+@keyframes scan-line { from { top:-5%; } to { top:105%; } }
+@keyframes dash { to { stroke-dashoffset:-60; } }
+@keyframes beacon-ping { 0% { r:4;opacity:1; } 100% { r:30;opacity:0; } }
+@keyframes slide-in { from { opacity:0;transform:translateY(20px); } to { opacity:1;transform:translateY(0); } }
+@keyframes glow { 0%,100% { text-shadow:0 0 20px rgba(80,170,255,0.2); } 50% { text-shadow:0 0 40px rgba(80,170,255,0.4),0 0 80px rgba(80,170,255,0.1); } }
+@keyframes plane-move { 0% { offset-distance:0%; opacity:0; } 5% { opacity:1; } 95% { opacity:1; } 100% { offset-distance:100%; opacity:0; } }
+</style>
+</head>
+<body style="margin:0;overflow:hidden;width:100vw;height:100vh;font-family:var(--font-mono);background:#060a10">
+
+<!-- === FLIGHT PATH IS THE SCREEN === -->
+<!-- The entire screen is a radar/map — not a background, THE interface -->
+
+<!-- Grid lines — subtle navigation chart -->
+<div style="position:absolute;inset:0;background:linear-gradient(rgba(80,170,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(80,170,255,0.03) 1px,transparent 1px);background-size:20% 20%;pointer-events:none"></div>
+
+<!-- Scanning line — radar sweep -->
+<div style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,rgba(80,170,255,0.15),transparent);animation:scan-line 4s linear infinite;pointer-events:none"></div>
+
+<!-- Flight arc — the hero visual, large SVG -->
+<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 390 844">
+  <!-- The arc from departure to destination -->
+  <path d="M320,200 Q195,420 90,700" fill="none" stroke="rgba(255,180,50,0.15)" stroke-width="2" stroke-dasharray="8 6" style="animation:dash 3s linear infinite"/>
+  <!-- Glowing halo along path -->
+  <path d="M320,200 Q195,420 90,700" fill="none" stroke="rgba(255,180,50,0.05)" stroke-width="20"/>
+  <!-- Departure point -->
+  <circle cx="320" cy="200" r="5" fill="rgba(80,170,255,0.8)"/>
+  <circle cx="320" cy="200" fill="none" stroke="rgba(80,170,255,0.3)" stroke-width="1"><animate attributeName="r" values="5;25;5" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0;1" dur="3s" repeatCount="indefinite"/></circle>
+  <!-- Destination point -->
+  <circle cx="90" cy="700" r="6" fill="rgba(255,180,50,0.9)"/>
+  <circle cx="90" cy="700" fill="none" stroke="rgba(255,180,50,0.3)" stroke-width="1"><animate attributeName="r" values="6;30;6" dur="2.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0;1" dur="2.5s" repeatCount="indefinite"/></circle>
+  <!-- Airplane marker moving along path -->
+  <circle r="3" fill="#fff" style="offset-path:path('M320,200 Q195,420 90,700');animation:plane-move 8s linear infinite"/>
+</svg>
+
+<!-- City labels on the map -->
+<div style="position:absolute;top:21%;right:5%;font-size:13px;color:rgba(80,170,255,0.4);letter-spacing:2px">北京 PEK</div>
+<div style="position:absolute;bottom:19%;left:8%;font-size:13px;color:rgba(255,180,50,0.5);letter-spacing:2px">成都 CTU</div>
+
+<!-- === CONTENT: data panels floating on the radar === -->
+
+<!-- Flight number — MASSIVE, the identity of this screen -->
+<div style="position:absolute;top:5%;left:6%;animation:slide-in .7s ease both">
+  <div style="font-size:clamp(56px,20vw,100px);font-weight:200;color:rgba(255,255,255,0.9);letter-spacing:-2px;animation:glow 4s ease infinite">CA1502</div>
+  <div style="display:flex;gap:16px;margin-top:8px;font-size:15px">
+    <span style="color:rgba(255,130,40,0.8);font-weight:500">延误 40 分钟</span>
+    <span style="color:rgba(255,255,255,0.3)">预计 18:10 登机</span>
+  </div>
+</div>
+
+<!-- Data strip — horizontal info bar, like a flight board -->
+<div style="position:absolute;top:24%;left:6%;right:6%;display:flex;gap:0;animation:slide-in .8s ease .15s both">
+  <div style="flex:1;border-right:1px solid rgba(80,170,255,0.08);padding:12px 0">
+    <div style="font-size:12px;color:rgba(80,170,255,0.4);letter-spacing:2px;margin-bottom:4px">登机口</div>
+    <div style="font-size:32px;font-weight:300;color:rgba(255,180,50,0.9)">B7</div>
+  </div>
+  <div style="flex:1;border-right:1px solid rgba(80,170,255,0.08);padding:12px 0 12px 16px">
+    <div style="font-size:12px;color:rgba(80,170,255,0.4);letter-spacing:2px;margin-bottom:4px">落地天气</div>
+    <div style="font-size:32px;font-weight:300;color:rgba(255,255,255,0.7)">22° 🌧</div>
+  </div>
+  <div style="flex:1;padding:12px 0 12px 16px">
+    <div style="font-size:12px;color:rgba(80,170,255,0.4);letter-spacing:2px;margin-bottom:4px">到达</div>
+    <div style="font-size:32px;font-weight:300;color:rgba(255,255,255,0.7)">19:50</div>
+  </div>
+</div>
+
+<!-- AI intelligence — bottom panel -->
+<div style="position:absolute;bottom:8%;left:6%;right:6%;animation:slide-in .9s ease .3s both">
+  <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:16px;padding:18px;border:1px solid rgba(80,170,255,0.06)">
+    <div style="font-size:19px;color:rgba(255,255,255,0.8);line-height:1.6">
+      登机口换了，从你现在的位置<br>
+      <span style="font-size:24px;color:rgba(80,170,255,0.8);font-weight:500">步行 8 分钟</span> 到 B7
+    </div>
+    <div style="margin-top:10px;font-size:15px;color:rgba(255,255,255,0.3)">全季酒店已帮你改成延迟入住 · 地铁约 55 分钟到</div>
+  </div>
+</div>
+
+<!-- Timestamp -->
+<div style="position:absolute;bottom:3%;left:0;right:0;text-align:center">
+  <span style="font-size:11px;color:rgba(80,170,255,0.15);letter-spacing:4px">17:30 · GLINT FLIGHT</span>
+</div>
+
+</body>
+</html>

@@ -5,3 +5,7 @@ dist/
 .DS_Store
 .superpowers/
 android/app/build/
+
+# harness
+harness/logs/
+harness/screenshots/iter-*.png

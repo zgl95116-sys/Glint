@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+<meta name="color-scheme" content="dark">
+<style>
+@keyframes fall { from { transform: translateY(-10vh) rotate(8deg); } to { transform: translateY(110vh) rotate(8deg); } }
+@keyframes flash { 0%,100% { opacity:0; } 48% { opacity:0; } 49% { opacity:.8; } 51% { opacity:0; } 52% { opacity:.4; } 54% { opacity:0; } }
+@keyframes pulse { 0%,100% { opacity:.6; } 50% { opacity:1; } }
+@keyframes slide-up { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+@keyframes drip { 0% { height:0; opacity:0; } 20% { opacity:.6; } 100% { height:25vh; opacity:0; } }
+</style>
+</head>
+<body style="margin:0;overflow:hidden;width:100vw;height:100vh;font-family:var(--font-display);background:#0c1117">
+
+<!-- === THE RAIN IS THE SCREEN === -->
+<!-- Dense rain field — the weather fills the entire viewport -->
+<div style="position:absolute;inset:0;overflow:hidden;pointer-events:none">
+  <!-- Thick rain streaks — foreground layer, fast -->
+  <div style="position:absolute;left:8%;width:2px;height:18vh;background:linear-gradient(transparent,rgba(150,190,255,0.4),transparent);animation:fall .6s linear infinite"></div>
+  <div style="position:absolute;left:22%;width:2px;height:22vh;background:linear-gradient(transparent,rgba(150,190,255,0.35),transparent);animation:fall .55s linear infinite;animation-delay:.1s"></div>
+  <div style="position:absolute;left:38%;width:2px;height:16vh;background:linear-gradient(transparent,rgba(150,190,255,0.45),transparent);animation:fall .5s linear infinite;animation-delay:.25s"></div>
+  <div style="position:absolute;left:52%;width:2px;height:20vh;background:linear-gradient(transparent,rgba(150,190,255,0.3),transparent);animation:fall .65s linear infinite;animation-delay:.05s"></div>
+  <div style="position:absolute;left:68%;width:2px;height:24vh;background:linear-gradient(transparent,rgba(150,190,255,0.4),transparent);animation:fall .45s linear infinite;animation-delay:.3s"></div>
+  <div style="position:absolute;left:82%;width:2px;height:14vh;background:linear-gradient(transparent,rgba(150,190,255,0.35),transparent);animation:fall .7s linear infinite;animation-delay:.15s"></div>
+  <div style="position:absolute;left:95%;width:2px;height:19vh;background:linear-gradient(transparent,rgba(150,190,255,0.3),transparent);animation:fall .58s linear infinite;animation-delay:.2s"></div>
+  <!-- Thin rain streaks — mid layer -->
+  <div style="position:absolute;left:5%;width:1px;height:12vh;background:linear-gradient(transparent,rgba(150,190,255,0.2),transparent);animation:fall .9s linear infinite;animation-delay:.4s"></div>
+  <div style="position:absolute;left:15%;width:1px;height:10vh;background:linear-gradient(transparent,rgba(150,190,255,0.15),transparent);animation:fall 1s linear infinite;animation-delay:.2s"></div>
+  <div style="position:absolute;left:30%;width:1px;height:14vh;background:linear-gradient(transparent,rgba(150,190,255,0.2),transparent);animation:fall .85s linear infinite;animation-delay:.5s"></div>
+  <div style="position:absolute;left:45%;width:1px;height:11vh;background:linear-gradient(transparent,rgba(150,190,255,0.18),transparent);animation:fall .95s linear infinite;animation-delay:.1s"></div>
+  <div style="position:absolute;left:60%;width:1px;height:13vh;background:linear-gradient(transparent,rgba(150,190,255,0.2),transparent);animation:fall .88s linear infinite;animation-delay:.35s"></div>
+  <div style="position:absolute;left:75%;width:1px;height:9vh;background:linear-gradient(transparent,rgba(150,190,255,0.15),transparent);animation:fall 1.1s linear infinite;animation-delay:.45s"></div>
+  <div style="position:absolute;left:88%;width:1px;height:15vh;background:linear-gradient(transparent,rgba(150,190,255,0.2),transparent);animation:fall .8s linear infinite;animation-delay:.6s"></div>
+</div>
+
+<!-- Lightning flash — entire screen -->
+<div style="position:absolute;inset:0;background:rgba(200,210,255,0.15);animation:flash 8s ease-in-out infinite;pointer-events:none"></div>
+
+<!-- Water drip at bottom — accumulation effect -->
+<div style="position:absolute;bottom:0;left:0;right:0;height:8vh;background:linear-gradient(transparent,rgba(80,120,180,0.1))"></div>
+
+<!-- === CONTENT: data floating IN the rain === -->
+
+<!-- Time — massive, rain-washed, the rain falls OVER it -->
+<div style="position:absolute;top:8%;left:6%;animation:slide-up .7s ease both">
+  <div style="font-size:clamp(90px,32vw,180px);font-weight:100;color:rgba(255,255,255,0.85);letter-spacing:-5px;line-height:.85;mix-blend-mode:screen">14:15</div>
+  <div style="font-size:17px;color:rgba(150,190,255,0.5);margin-top:6px">周三 · 暴雨</div>
+</div>
+
+<!-- Alert — red pulse badge -->
+<div style="position:absolute;top:33%;left:6%;animation:slide-up .8s ease .1s both">
+  <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,50,40,0.15);border:1px solid rgba(255,50,40,0.3);border-radius:12px;padding:8px 16px;animation:pulse 2s ease infinite">
+    <div style="width:8px;height:8px;border-radius:50%;background:#ff3b30"></div>
+    <span style="font-size:16px;color:rgba(255,80,60,0.9);letter-spacing:1px;font-weight:500">45 分钟后开会</span>
+  </div>
+</div>
+
+<!-- Core message — BIG, readable, emotional -->
+<div style="position:absolute;top:42%;left:6%;right:6%;animation:slide-up .9s ease .2s both">
+  <div style="font-size:28px;font-weight:300;color:rgba(255,255,255,0.9);line-height:1.6">外面暴雨，我帮你查了——<br><span style="font-size:22px;color:rgba(150,190,255,0.7)">打车到公司约 25 分钟，<br>现在叫车刚好来得及。</span></div>
+</div>
+
+<!-- Info block — data embedded in the rainstorm -->
+<div style="position:absolute;bottom:18%;left:6%;right:6%;background:rgba(255,255,255,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;padding:18px 20px;border:1px solid rgba(150,190,255,0.08);animation:slide-up 1s ease .35s both">
+  <div style="font-size:18px;color:rgba(255,255,255,0.8);line-height:1.7">
+    <div style="display:flex;justify-content:space-between"><span>📊 Q3 汇报摘要已生成</span><span style="color:rgba(255,255,255,0.35)">3页</span></div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px"><span>👥 张总、李明、产品组 ×4</span><span style="color:rgba(255,255,255,0.35)">B-803</span></div>
+    <div style="margin-top:8px;font-size:15px;color:rgba(150,190,255,0.45)">竞品数据还差一块，要不要现在补？</div>
+  </div>
+</div>
+
+<!-- Bottom: temperature as ambient info -->
+<div style="position:absolute;bottom:6%;left:6%;right:6%;display:flex;justify-content:space-between;align-items:center;animation:slide-up 1s ease .5s both">
+  <div style="font-size:36px;font-weight:200;color:rgba(150,190,255,0.4)">18°</div>
+  <div style="font-size:12px;color:rgba(255,255,255,0.15);letter-spacing:5px">GLINT · STORM</div>
+</div>
+
+</body>
+</html>

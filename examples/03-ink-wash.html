@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+<meta name="color-scheme" content="dark">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400;600&display=swap" rel="stylesheet">
+<style>
+@keyframes moon-glow { 0%,100% { box-shadow:0 0 50px 15px rgba(255,240,200,0.1),0 0 100px 40px rgba(255,240,200,0.05); } 50% { box-shadow:0 0 70px 25px rgba(255,240,200,0.15),0 0 140px 60px rgba(255,240,200,0.08); } }
+@keyframes drift { 0%,100% { transform:translate(0,0); } 50% { transform:translate(3px,-5px); } }
+@keyframes ink-appear { from { clip-path:inset(0 100% 0 0); } to { clip-path:inset(0 0% 0 0); } }
+@keyframes fade-in { from { opacity:0; } to { opacity:1; } }
+@keyframes breathe { 0%,100% { opacity:.15; } 50% { opacity:.25; } }
+</style>
+</head>
+<body style="margin:0;overflow:hidden;width:100vw;height:100vh;font-family:'Noto Serif SC',var(--font-serif);background:#0a0a0c">
+
+<!-- Subtle dark texture — ink-on-rice-paper feel but inverted -->
+<div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 70%,rgba(30,25,35,1),#0a0a0c 60%)"></div>
+
+<!-- Moon — the sole light source, large and luminous -->
+<div style="position:absolute;top:8%;right:12%;width:clamp(80px,22vmin,130px);height:clamp(80px,22vmin,130px);border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff8e0,#f0e4b8 40%,#d4c48a 80%);animation:moon-glow 6s ease-in-out infinite,drift 10s ease-in-out infinite"></div>
+
+<!-- Moonlight spill — soft cone of light from the moon -->
+<div style="position:absolute;top:15%;right:0;width:70vw;height:80vh;background:radial-gradient(ellipse at top right,rgba(255,240,200,0.04),transparent 60%);pointer-events:none"></div>
+
+<!-- === INK MOUNTAIN SILHOUETTE — SVG hero visual === -->
+<svg style="position:absolute;bottom:25%;left:0;width:100%;height:45%;opacity:.6;animation:ink-appear 3s ease both" viewBox="0 0 1000 400" preserveAspectRatio="none">
+  <filter id="ink"><feTurbulence type="fractalNoise" baseFrequency=".025" numOctaves="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G"/></filter>
+  <!-- Far mountains — faint -->
+  <path d="M0,350 Q100,200 200,280 Q300,180 420,260 Q500,150 620,240 Q750,160 850,250 Q950,200 1000,280 L1000,400 L0,400Z" fill="rgba(255,255,255,0.04)" style="filter:url(#ink)"/>
+  <!-- Near mountains — darker -->
+  <path d="M0,380 Q80,250 180,310 Q280,180 400,290 Q480,120 600,260 Q720,170 830,280 Q920,220 1000,300 L1000,400 L0,400Z" fill="rgba(255,255,255,0.08)" style="filter:url(#ink)"/>
+</svg>
+
+<!-- Sparse stars -->
+<div style="position:absolute;top:20%;left:25%;width:2px;height:2px;background:rgba(255,255,255,0.3);border-radius:50%;animation:breathe 4s ease infinite"></div>
+<div style="position:absolute;top:12%;left:50%;width:1px;height:1px;background:rgba(255,255,255,0.25);border-radius:50%;animation:breathe 5s ease infinite 1s"></div>
+<div style="position:absolute;top:30%;left:70%;width:2px;height:2px;background:rgba(255,255,255,0.2);border-radius:50%;animation:breathe 6s ease infinite 2s"></div>
+
+<!-- === CONTENT === -->
+
+<!-- Time — large serif, moonlit, upper area -->
+<div style="position:absolute;top:8%;left:7%;animation:fade-in 2s ease .5s both">
+  <div style="font-size:clamp(80px,28vw,160px);font-weight:200;color:rgba(255,250,230,0.8);letter-spacing:-3px;line-height:.85;text-shadow:0 2px 30px rgba(255,240,200,0.1)">22:45</div>
+  <div style="font-size:16px;color:rgba(255,250,230,0.25);letter-spacing:5px;margin-top:8px">深秋 · 周日夜</div>
+</div>
+
+<!-- Poetic summary — the AI speaks like a verse -->
+<div style="position:absolute;top:44%;left:7%;right:15%;animation:fade-in 2s ease 1s both">
+  <div style="font-size:26px;font-weight:300;color:rgba(255,250,230,0.6);line-height:1.8;letter-spacing:2px">
+    走了一万两千步，<br>
+    做完了六件事。<br>
+    <span style="font-size:22px;color:rgba(255,250,230,0.3)">还剩两件，不急，明天再说。</span>
+  </div>
+</div>
+
+<!-- Tomorrow preview — bottom, like an inscription on a painting -->
+<div style="position:absolute;bottom:10%;left:7%;right:7%;animation:fade-in 2s ease 1.5s both">
+  <div style="height:1px;background:linear-gradient(to right,rgba(255,250,230,0.08),transparent);margin-bottom:14px"></div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end">
+    <div>
+      <div style="font-size:14px;color:rgba(255,250,230,0.2);margin-bottom:4px">明早</div>
+      <div style="font-size:20px;color:rgba(255,250,230,0.55)">09:00 客户拜访</div>
+      <div style="font-size:16px;color:rgba(255,250,230,0.25);margin-top:2px">记得带合同。我设了闹钟。</div>
+    </div>
+    <!-- Seal -->
+    <div style="width:32px;height:32px;border:1px solid rgba(200,60,40,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <span style="font-size:14px;color:rgba(200,60,40,0.4);font-weight:600">灵</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { PRESET_PROMPTS } from '../constants/prompts';
+import type { PromptSource } from '../services/geminiService';
 
 interface HomeScreenProps {
-  onGenerate: (prompt: string) => void;
+  onGenerate: (prompt: string, promptSource: PromptSource) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onGenerate }) => {
@@ -11,7 +12,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onGenerate }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
-      onGenerate(input.trim());
+      onGenerate(input.trim(), 'custom');
       setInput('');
     }
   };
@@ -26,7 +27,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onGenerate }) => {
           <button
             key={i}
             className="home-chip"
-            onClick={() => onGenerate(p.prompt)}
+            onClick={() => onGenerate(p.prompt, 'preset')}
           >
             {p.label}
           </button>

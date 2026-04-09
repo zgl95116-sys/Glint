@@ -4,38 +4,38 @@ import { Sandbox } from './Sandbox';
 interface LockScreenProps {
   htmlContent: string;
   isLoading: boolean;
+  isActive: boolean;
+  revealPhase: 'idle' | 'blurred' | 'revealing';
   onBack: () => void;
 }
 
-export const LockScreen: React.FC<LockScreenProps> = ({ htmlContent, isLoading, onBack }) => {
-  const showLoading = isLoading && !htmlContent;
+const FILTER_STYLES: Record<string, React.CSSProperties> = {
+  idle: {},
+  // Instant blur — no transition, hides the content swap
+  blurred: {
+    filter: 'blur(14px) saturate(1.6)',
+    transition: 'none',
+  },
+  // Slow deblur — content "develops" like a photograph
+  revealing: {
+    filter: 'blur(0px) saturate(1)',
+    transition: 'filter 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+  },
+};
 
+export const LockScreen: React.FC<LockScreenProps> = ({ htmlContent, isLoading, isActive, revealPhase, onBack }) => {
   return (
-    <div className="lock-screen">
-      {/* Loading state — a beautiful placeholder lockscreen */}
-      {showLoading && (
-        <div className="lock-loading">
-          <div className="lock-loading-time">
-            {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })}
-          </div>
-          <div className="lock-loading-date">
-            {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
-          </div>
-          <div className="lock-loading-hint">
-            <div className="lock-loading-dot" />
-            Glint 正在为你生成...
-          </div>
+    <div className={`lock-screen${isActive ? ' lock-screen-active' : ' lock-screen-idle'}`}>
+      <div className="lock-sandbox-wrap" style={FILTER_STYLES[revealPhase]}>
+        <Sandbox htmlContent={htmlContent} />
+      </div>
+
+      {isActive && (
+        <div className="lock-back-pill" onClick={onBack}>
+          <span className="lock-back-brand">GLINT</span>
+          <span className="lock-back-hint">{isLoading ? '生成中...' : '点击返回'}</span>
         </div>
       )}
-
-      {/* AI generated content — full screen */}
-      <Sandbox htmlContent={htmlContent} />
-
-      {/* Minimal overlay — back pill */}
-      <div className="lock-back-pill" onClick={onBack}>
-        <span className="lock-back-brand">GLINT</span>
-        <span className="lock-back-hint">{isLoading ? '生成中...' : '点击返回'}</span>
-      </div>
     </div>
   );
 };
