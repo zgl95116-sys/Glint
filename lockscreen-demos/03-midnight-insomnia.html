@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    width:390px;height:844px;overflow:hidden;
+    font-family:'Noto Serif SC',serif;
+    background:#050508;
+    position:relative;
+  }
+
+  /* === INK WASH BACKGROUND === */
+  .ink{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(ellipse at 70% 20%, rgba(20,18,40,0.8) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 80%, rgba(15,12,30,0.6) 0%, transparent 40%);
+  }
+
+  /* === MOON — sole light source === */
+  .moon{
+    position:absolute;
+    top:8%;right:15%;
+    width:90px;height:90px;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 35%, #f5f0e0, #e8dfc0 40%, #c4b896 70%, rgba(150,140,110,0.2) 100%);
+    box-shadow:
+      0 0 60px 20px rgba(240,230,190,0.08),
+      0 0 120px 50px rgba(240,230,190,0.04);
+    animation: moon-float 10s ease-in-out infinite;
+  }
+  @keyframes moon-float{
+    0%,100%{transform:translate(0,0)}
+    50%{transform:translate(-3px,5px)}
+  }
+
+  /* === Moon's light cone on the "water" === */
+  .moon-reflection{
+    position:absolute;
+    bottom:25%;left:55%;
+    width:80px;height:200px;
+    background:linear-gradient(to bottom,rgba(240,230,190,0.04),rgba(240,230,190,0.01),transparent);
+    filter:blur(20px);
+    transform:scaleX(0.5);
+    animation:reflection-shimmer 4s ease-in-out infinite;
+  }
+  @keyframes reflection-shimmer{
+    0%,100%{transform:scaleX(0.5);opacity:0.8}
+    50%{transform:scaleX(0.7);opacity:1}
+  }
+
+  /* === STARS === */
+  .star{
+    position:absolute;
+    width:2px;height:2px;
+    background:rgba(255,255,255,0.5);
+    border-radius:50%;
+    animation:twinkle ease-in-out infinite;
+  }
+  @keyframes twinkle{
+    0%,100%{opacity:0.2}
+    50%{opacity:0.8}
+  }
+
+  /* === Mountain silhouettes — ink wash style === */
+  .mountains{
+    position:absolute;bottom:20%;left:0;right:0;height:40%;
+    opacity:0;
+    animation:mountains-in 3s ease-out 0.5s forwards;
+  }
+  @keyframes mountains-in{
+    from{opacity:0;filter:blur(4px)}
+    to{opacity:1;filter:blur(0)}
+  }
+
+  /* === BREATHING INDICATOR — are you awake? === */
+  .breath-ring{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:180px;height:180px;
+    border-radius:50%;
+    border:1px solid rgba(240,230,190,0.06);
+    animation:breathe 6s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{transform:translate(-50%,-50%) scale(0.8);border-color:rgba(240,230,190,0.04)}
+    50%{transform:translate(-50%,-50%) scale(1.1);border-color:rgba(240,230,190,0.1)}
+  }
+
+  .grain{
+    position:absolute;inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+    pointer-events:none;opacity:0.6;
+  }
+
+  .content{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;
+    padding:50px 30px 44px;
+    z-index:10;
+  }
+
+  @keyframes fade-in{from{opacity:0}to{opacity:1}}
+  @keyframes slow-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes heartbeat-line{
+    0%{d:path("M0,25 L40,25 L45,25 L50,25 L55,25 L60,25 L100,25")}
+    10%{d:path("M0,25 L40,25 L44,20 L48,30 L52,10 L56,35 L60,25 L100,25")}
+    20%{d:path("M0,25 L40,25 L45,25 L50,25 L55,25 L60,25 L100,25")}
+    100%{d:path("M0,25 L40,25 L45,25 L50,25 L55,25 L60,25 L100,25")}
+  }
+</style>
+</head>
+<body>
+  <div class="ink"></div>
+  <div class="moon"></div>
+  <div class="moon-reflection"></div>
+
+  <!-- Stars -->
+  <div class="star" style="top:5%;left:20%;animation-duration:3s"></div>
+  <div class="star" style="top:12%;left:45%;animation-duration:4s;animation-delay:1s"></div>
+  <div class="star" style="top:8%;left:70%;animation-duration:5s;animation-delay:2s;width:1px;height:1px"></div>
+  <div class="star" style="top:18%;left:30%;animation-duration:3.5s;animation-delay:0.5s;width:1px;height:1px"></div>
+  <div class="star" style="top:3%;left:85%;animation-duration:4.5s;animation-delay:1.5s"></div>
+  <div class="star" style="top:22%;left:58%;animation-duration:6s;animation-delay:3s;width:1px;height:1px"></div>
+  <div class="star" style="top:15%;left:12%;animation-duration:5s;animation-delay:2.5s;width:1px;height:1px"></div>
+
+  <!-- Mountain silhouettes -->
+  <div class="mountains">
+    <svg viewBox="0 0 390 340" style="width:100%;height:100%;position:absolute;bottom:0" preserveAspectRatio="xMidYMax meet">
+      <path d="M0,280 Q60,180 120,220 Q180,100 240,200 Q300,140 350,210 Q380,190 390,220 L390,340 L0,340Z" fill="rgba(255,255,255,0.025)"/>
+      <path d="M0,300 Q80,220 150,260 Q200,180 270,240 Q320,200 370,250 L390,240 L390,340 L0,340Z" fill="rgba(255,255,255,0.04)"/>
+      <path d="M0,320 Q100,270 180,290 Q230,250 300,280 Q350,260 390,290 L390,340 L0,340Z" fill="rgba(255,255,255,0.055)"/>
+    </svg>
+  </div>
+
+  <!-- Breathing ring -->
+  <div class="breath-ring"></div>
+
+  <div class="grain"></div>
+
+  <div class="content">
+    <!-- HERO: Just the time — enormous, lonely -->
+    <div style="animation:fade-in 2s ease 0.5s both">
+      <div style="font-size:120px;font-weight:200;color:rgba(240,235,210,0.88);letter-spacing:-4px;line-height:0.85;text-shadow:0 2px 40px rgba(240,230,190,0.1)">
+        2:34
+      </div>
+      <div style="font-size:14px;color:rgba(240,235,210,0.4);letter-spacing:4px;margin-top:10px;font-weight:300">
+        周四凌晨 · 万籁俱寂
+      </div>
+    </div>
+
+    <!-- Heartbeat SVG — a subtle surprise -->
+    <div style="margin-top:32px;animation:fade-in 2s ease 2s both">
+      <svg viewBox="0 0 100 50" style="width:120px;height:40px;overflow:visible">
+        <path d="M0,25 L35,25 L40,25 L44,20 L48,30 L52,8 L56,38 L60,25 L65,25 L100,25"
+              fill="none" stroke="rgba(240,230,190,0.25)" stroke-width="1.5" stroke-linecap="round">
+          <animate attributeName="d"
+            values="M0,25 L35,25 L40,25 L45,25 L50,25 L55,25 L60,25 L65,25 L100,25;
+                    M0,25 L35,25 L40,22 L44,28 L48,8 L52,38 L56,20 L60,25 L65,25 L100,25;
+                    M0,25 L35,25 L40,25 L45,25 L50,25 L55,25 L60,25 L65,25 L100,25"
+            dur="3s" repeatCount="indefinite"/>
+        </path>
+      </svg>
+    </div>
+
+    <!-- Push everything else to bottom -->
+    <div style="flex:1"></div>
+
+    <!-- AI VOICE — whispered, intimate -->
+    <div style="animation:slow-up 2s ease 1.5s both;margin-bottom:24px">
+      <div style="font-size:26px;font-weight:200;color:rgba(240,235,210,0.85);line-height:1.8;letter-spacing:1px;text-shadow:0 1px 12px rgba(0,0,0,0.5)">
+        睡不着的夜里，<br>
+        世界终于安静得<br>
+        只剩你自己。
+      </div>
+      <div style="font-size:18px;color:rgba(240,235,210,0.5);margin-top:16px;line-height:1.6;font-weight:300">
+        明天上午没有会。<br>
+        闹钟 8:30，还能睡六小时。
+      </div>
+    </div>
+
+    <!-- Minimal data — sleep pressure indicator -->
+    <div style="animation:slow-up 1.5s ease 2.5s both">
+      <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:16px;border:1px solid rgba(240,230,190,0.05)">
+        <div style="width:40px;height:40px;border-radius:50%;background:conic-gradient(rgba(100,140,200,0.6) 0deg 250deg, rgba(255,255,255,0.05) 250deg 360deg);display:flex;align-items:center;justify-content:center">
+          <div style="width:30px;height:30px;border-radius:50%;background:#0a0a10;display:flex;align-items:center;justify-content:center">
+            <span style="font-size:11px;color:rgba(140,170,220,0.9);font-weight:500">69%</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:15px;color:rgba(240,235,210,0.75)">睡眠压力已经很高了</div>
+          <div style="font-size:12px;color:rgba(240,235,210,0.4);margin-top:2px">放下手机，闭上眼睛试试</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align:center;margin-top:20px;animation:fade-in 2s ease 3s both">
+      <div style="font-size:11px;color:rgba(240,230,190,0.12);letter-spacing:8px">GLINT · STILL</div>
+    </div>
+  </div>
+</body>
+</html>

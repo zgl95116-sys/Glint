@@ -63,16 +63,51 @@ const App: React.FC = () => {
   const [htmlContent, setHtmlContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [revealPhase, setRevealPhase] = useState<'idle' | 'blurred' | 'revealing'>('idle');
+  const [sandboxSessionKey, setSandboxSessionKey] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
+  const lastSandboxRuntimeRef = useRef<'stream' | 'prefab'>('stream');
 
-  const handleGenerate = useCallback(async (prompt: string, promptSource: PromptSource) => {
+  const handleGenerate = useCallback(async (prompt: string, promptSource: PromptSource, prefabHtml?: string) => {
+    console.log('[DEBUG] handleGenerate called, prefabHtml:', typeof prefabHtml, prefabHtml ? 'HAS_CONTENT_len=' + prefabHtml.length : 'UNDEFINED', 'prompt:', prompt.slice(0, 30));
     if (abortRef.current) {
       abortRef.current.abort();
     }
     const controller = new AbortController();
     abortRef.current = controller;
 
+    const nextSandboxRuntime = prefabHtml ? 'prefab' : 'stream';
+    const needsFreshSandbox =
+      nextSandboxRuntime === 'prefab' || lastSandboxRuntimeRef.current === 'prefab';
+
+    // Script-heavy presets leave timers, rAF loops, and global bindings behind.
+    // Recreate the iframe only when entering/exiting that runtime class so
+    // normal stream->stream generations keep the existing low-latency path.
+    if (needsFreshSandbox) {
+      setSandboxSessionKey((current) => current + 1);
+    }
+    lastSandboxRuntimeRef.current = nextSandboxRuntime;
     setScreen('lockscreen');
+
+    // ── Prefab path: skip Gemini, render pre-generated HTML directly ──
+    if (prefabHtml) {
+      setIsLoading(true);
+      setHtmlContent(buildBridgeHtml(prompt));
+      // Hold bridge briefly then crossfade to prefab content
+      setTimeout(() => {
+        if (controller.signal.aborted) return;
+        setRevealPhase('blurred');
+        setHtmlContent(prefabHtml);
+        setTimeout(() => {
+          setRevealPhase('revealing');
+          setTimeout(() => setRevealPhase('idle'), 700);
+        }, 50);
+        setIsLoading(false);
+        if (abortRef.current === controller) abortRef.current = null;
+      }, 1200);
+      return;
+    }
+
+    // ── Standard Gemini streaming path ──
     setIsLoading(true);
     // Paint an instant skeleton derived from the prompt (time + motif). The
     // sandbox shows it within a frame; once the stream opens its own <body>
@@ -228,6 +263,7 @@ const App: React.FC = () => {
           isLoading={isLoading}
           isActive={screen === 'lockscreen'}
           revealPhase={revealPhase}
+          sandboxSessionKey={sandboxSessionKey}
           onBack={handleBack}
         />
       </div>

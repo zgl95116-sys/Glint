@@ -1,0 +1,221 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    width:390px;height:844px;overflow:hidden;
+    font-family:'Noto Serif SC',serif;
+    background:#060610;
+    position:relative;
+    display:flex;align-items:center;justify-content:center;
+  }
+  canvas{position:absolute;inset:0;z-index:1}
+
+  .text-layer{
+    position:absolute;inset:0;z-index:10;pointer-events:none;
+    display:flex;flex-direction:column;
+    padding:48px 30px 44px;
+  }
+  .phase{
+    font-size:32px;font-weight:200;
+    color:rgba(255,255,255,0.9);
+    letter-spacing:8px;
+    text-align:center;
+    text-shadow:0 0 30px rgba(120,180,255,0.2);
+    transition:opacity 1s ease, transform 1s ease;
+  }
+  .guide{
+    font-size:16px;color:rgba(200,220,255,0.5);
+    text-align:center;margin-top:8px;
+    letter-spacing:2px;
+    transition:opacity 1s ease;
+  }
+  .bottom-text{
+    font-size:20px;font-weight:200;
+    color:rgba(255,255,255,0.75);
+    text-align:center;
+    line-height:1.8;
+    text-shadow:0 1px 10px rgba(0,0,0,0.5);
+  }
+  .footer{font-size:11px;color:rgba(150,180,220,0.15);letter-spacing:6px;text-align:center;margin-top:16px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="text-layer">
+  <div style="margin-top:40px">
+    <div class="phase" id="phase">吸</div>
+    <div class="guide" id="guide">跟着它呼吸</div>
+  </div>
+  <div style="flex:1"></div>
+  <div>
+    <div class="bottom-text">
+      你不需要做任何事。<br>
+      只需要呼吸。
+    </div>
+    <div class="footer">GLINT · BREATHE</div>
+  </div>
+</div>
+
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+canvas.width=390;canvas.height=844;
+
+const phaseEl=document.getElementById('phase');
+const guideEl=document.getElementById('guide');
+
+// Breathing cycle: 4s inhale, 2s hold, 6s exhale, 2s hold = 14s total
+const CYCLE=14000;
+const INHALE=4000,HOLD1=2000,EXHALE=6000,HOLD2=2000;
+
+let time=0;
+let lastTimestamp=0;
+
+// Organic creature — blob made of layered sine waves
+function getBreathPhase(t){
+  const ct=t%CYCLE;
+  if(ct<INHALE)return{phase:'inhale',progress:ct/INHALE,label:'吸',guide:'慢慢吸气 4 秒'};
+  if(ct<INHALE+HOLD1)return{phase:'hold',progress:1,label:'屏',guide:'屏住 2 秒'};
+  if(ct<INHALE+HOLD1+EXHALE)return{phase:'exhale',progress:1-(ct-INHALE-HOLD1)/EXHALE,label:'呼',guide:'缓缓呼出 6 秒'};
+  return{phase:'hold2',progress:0,label:'静',guide:'放空 2 秒'};
+}
+
+function easeInOutCubic(t){return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+
+// Color palette shifts with breath
+function getColors(breathProgress){
+  // 0 = exhaled (deep blue), 1 = inhaled (warm teal)
+  const bp=breathProgress;
+  return{
+    core:`hsla(${200+bp*30},${50+bp*20}%,${30+bp*25}%,0.6)`,
+    mid:`hsla(${210+bp*40},${40+bp*30}%,${20+bp*15}%,0.3)`,
+    outer:`hsla(${220+bp*20},${30+bp*10}%,${10+bp*10}%,0.15)`,
+    glow:`hsla(${190+bp*40},${60+bp*20}%,${50+bp*20}%,${0.05+bp*0.08})`,
+    particle:`hsla(${180+bp*50},70%,70%,`
+  };
+}
+
+// Floating particles around the creature
+let floatingParticles=[];
+for(let i=0;i<50;i++){
+  floatingParticles.push({
+    angle:Math.random()*Math.PI*2,
+    dist:100+Math.random()*180,
+    speed:0.0003+Math.random()*0.001,
+    size:1+Math.random()*2.5,
+    phase:Math.random()*Math.PI*2,
+    bobSpeed:0.001+Math.random()*0.002
+  });
+}
+
+function draw(timestamp){
+  if(!lastTimestamp)lastTimestamp=timestamp;
+  const dt=timestamp-lastTimestamp;
+  lastTimestamp=timestamp;
+  time+=dt;
+
+  ctx.clearRect(0,0,390,844);
+
+  // Background
+  const bgG=ctx.createRadialGradient(195,422,0,195,422,500);
+  bgG.addColorStop(0,'#0c0c1a');
+  bgG.addColorStop(1,'#050508');
+  ctx.fillStyle=bgG;
+  ctx.fillRect(0,0,390,844);
+
+  const bp=getBreathPhase(time);
+  const breath=easeInOutCubic(bp.progress);
+  const cx=195,cy=400;
+  const colors=getColors(breath);
+
+  // Update text
+  phaseEl.textContent=bp.label;
+  guideEl.textContent=bp.guide;
+  phaseEl.style.opacity=bp.phase==='hold2'?'0.4':'0.9';
+
+  // Draw creature — layered organic blob
+  const layers=[
+    {radiusBase:50+breath*70, amplitude:8+breath*12, loops:6, style:colors.outer, blur:40},
+    {radiusBase:40+breath*55, amplitude:6+breath*10, loops:7, style:colors.mid, blur:20},
+    {radiusBase:25+breath*40, amplitude:4+breath*6, loops:8, style:colors.core, blur:8},
+  ];
+
+  // Outer glow
+  const glowR=80+breath*120;
+  const glowG=ctx.createRadialGradient(cx,cy,0,cx,cy,glowR*1.5);
+  glowG.addColorStop(0,colors.glow);
+  glowG.addColorStop(1,'transparent');
+  ctx.fillStyle=glowG;
+  ctx.fillRect(0,0,390,844);
+
+  // Draw blob layers
+  for(const layer of layers){
+    ctx.save();
+    ctx.filter=`blur(${layer.blur}px)`;
+    ctx.beginPath();
+    const steps=120;
+    for(let i=0;i<=steps;i++){
+      const a=(i/steps)*Math.PI*2;
+      const wobble=Math.sin(a*layer.loops+time*0.001)*layer.amplitude;
+      const wobble2=Math.cos(a*(layer.loops-2)+time*0.0007)*layer.amplitude*0.5;
+      const r=layer.radiusBase+wobble+wobble2;
+      const x=cx+Math.cos(a)*r;
+      const y=cy+Math.sin(a)*r;
+      if(i===0)ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.fillStyle=layer.style;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Inner light core
+  const coreR=15+breath*25;
+  const coreG=ctx.createRadialGradient(cx,cy,0,cx,cy,coreR);
+  coreG.addColorStop(0,`rgba(255,255,255,${0.15+breath*0.15})`);
+  coreG.addColorStop(1,'transparent');
+  ctx.fillStyle=coreG;
+  ctx.beginPath();
+  ctx.arc(cx,cy,coreR,0,Math.PI*2);
+  ctx.fill();
+
+  // Floating particles
+  for(const p of floatingParticles){
+    p.angle+=p.speed;
+    const bob=Math.sin(time*p.bobSpeed+p.phase)*15;
+    const dist=p.dist*(0.8+breath*0.4)+bob;
+    const px=cx+Math.cos(p.angle)*dist;
+    const py=cy+Math.sin(p.angle)*dist;
+    const alpha=0.2+breath*0.3+Math.sin(time*0.002+p.phase)*0.1;
+    ctx.beginPath();
+    ctx.arc(px,py,p.size,0,Math.PI*2);
+    ctx.fillStyle=colors.particle+`${Math.max(0,alpha)})`;
+    ctx.fill();
+  }
+
+  // Concentric breath rings
+  const ringCount=3;
+  for(let i=0;i<ringCount;i++){
+    const ringPhase=(time*0.0005+i*0.33)%1;
+    const ringR=(60+breath*80)*(0.5+ringPhase);
+    const ringAlpha=(1-ringPhase)*0.08;
+    ctx.beginPath();
+    ctx.arc(cx,cy,ringR,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(150,200,255,${ringAlpha})`;
+    ctx.lineWidth=1;
+    ctx.stroke();
+  }
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

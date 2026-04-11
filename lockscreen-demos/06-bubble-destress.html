@@ -1,0 +1,273 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="color-scheme" content="dark">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
+  body{
+    width:390px;height:844px;overflow:hidden;
+    font-family:system-ui,-apple-system,sans-serif;
+    background:#0a0a12;
+    position:relative;
+    touch-action:none;
+    cursor:pointer;
+  }
+  canvas{position:absolute;inset:0}
+  .overlay{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;
+    padding:48px 28px 44px;
+    pointer-events:none;
+    z-index:10;
+  }
+  .counter{
+    font-size:120px;font-weight:100;
+    color:rgba(255,255,255,0.9);
+    line-height:0.85;
+    letter-spacing:-4px;
+    text-shadow:0 0 60px rgba(120,200,255,0.15);
+    transition:transform 0.15s ease;
+  }
+  .counter.pop{transform:scale(1.05)}
+  .label{font-size:14px;color:rgba(255,255,255,0.4);letter-spacing:4px;margin-top:8px}
+  .msg{
+    font-size:22px;font-weight:300;
+    color:rgba(255,255,255,0.85);
+    line-height:1.6;
+    text-shadow:0 1px 8px rgba(0,0,0,0.5);
+    transition:opacity 0.5s ease;
+  }
+  .hint{
+    position:absolute;bottom:44px;left:0;right:0;
+    text-align:center;
+    font-size:13px;color:rgba(255,255,255,0.25);
+    letter-spacing:3px;
+    animation:fade-hint 3s ease infinite;
+  }
+  @keyframes fade-hint{0%,100%{opacity:0.25}50%{opacity:0.5}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="overlay">
+  <div>
+    <div class="counter" id="count">0</div>
+    <div class="label">BUBBLES POPPED</div>
+  </div>
+  <div style="flex:1"></div>
+  <div class="msg" id="msg">点任意位置。<br>每一颗泡泡，都是一个烦恼。</div>
+</div>
+<div class="hint" id="hint">TAP ANYWHERE · 戳一下试试</div>
+
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+canvas.width=390;canvas.height=844;
+
+let bubbles=[];
+let particles=[];
+let popCount=0;
+let ripples=[];
+const countEl=document.getElementById('count');
+const msgEl=document.getElementById('msg');
+const hintEl=document.getElementById('hint');
+
+const messages=[
+  {at:0, text:'点任意位置。<br>每一颗泡泡，都是一个烦恼。'},
+  {at:3, text:'对，就是这样。<br>戳破它。'},
+  {at:8, text:'有些烦恼，戳一下就散了。'},
+  {at:15,text:'你看，连锁反应。<br>一个消失，带走一串。'},
+  {at:25,text:'呼——<br>感觉好一点了吧？'},
+  {at:40,text:'世界清净了。'},
+  {at:60,text:'你已经戳了60个泡泡。<br>可以放下手机了。'},
+];
+
+// Bubble class
+class Bubble{
+  constructor(x,y,r){
+    this.x=x||Math.random()*390;
+    this.y=y||844+Math.random()*100;
+    this.r=r||(15+Math.random()*30);
+    this.vy=-(0.3+Math.random()*0.5);
+    this.vx=(Math.random()-0.5)*0.3;
+    this.wobble=Math.random()*Math.PI*2;
+    this.wobbleSpeed=0.01+Math.random()*0.02;
+    this.opacity=0;
+    this.targetOpacity=0.15+Math.random()*0.25;
+    this.hue=180+Math.random()*80; // blue to purple
+    this.alive=true;
+  }
+  update(){
+    this.y+=this.vy;
+    this.x+=this.vx+Math.sin(this.wobble)*0.3;
+    this.wobble+=this.wobbleSpeed;
+    if(this.opacity<this.targetOpacity)this.opacity+=0.005;
+    if(this.y<-this.r*2)this.alive=false;
+  }
+  draw(){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    // Gradient fill
+    const g=ctx.createRadialGradient(this.x-this.r*0.3,this.y-this.r*0.3,this.r*0.1,this.x,this.y,this.r);
+    g.addColorStop(0,`hsla(${this.hue},80%,80%,${this.opacity*0.8})`);
+    g.addColorStop(0.5,`hsla(${this.hue},60%,50%,${this.opacity*0.4})`);
+    g.addColorStop(1,`hsla(${this.hue},50%,40%,${this.opacity*0.1})`);
+    ctx.fillStyle=g;
+    ctx.fill();
+    // Highlight
+    ctx.beginPath();
+    ctx.arc(this.x-this.r*0.25,this.y-this.r*0.25,this.r*0.2,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,255,255,${this.opacity*0.5})`;
+    ctx.fill();
+    // Ring
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.strokeStyle=`hsla(${this.hue},60%,70%,${this.opacity*0.3})`;
+    ctx.lineWidth=1;
+    ctx.stroke();
+  }
+  contains(px,py){
+    const dx=px-this.x,dy=py-this.y;
+    return dx*dx+dy*dy<(this.r+10)*(this.r+10);
+  }
+  pop(isChain){
+    if(!this.alive)return; // prevent double-pop
+    this.alive=false;
+    // Spawn particles
+    const n=8+Math.floor(Math.random()*8);
+    for(let i=0;i<n;i++){
+      const angle=Math.random()*Math.PI*2;
+      const speed=1+Math.random()*3;
+      particles.push({
+        x:this.x,y:this.y,
+        vx:Math.cos(angle)*speed,
+        vy:Math.sin(angle)*speed,
+        r:1.5+Math.random()*2.5,
+        life:1,
+        decay:0.015+Math.random()*0.02,
+        hue:this.hue
+      });
+    }
+    // Ripple
+    ripples.push({x:this.x,y:this.y,r:this.r,maxR:this.r*3,opacity:0.4,hue:this.hue});
+    // Chain reaction — only if directly tapped (not from another chain), max 1 neighbor
+    if(!isChain){
+      const chainRange=this.r*1.2;
+      let chained=false;
+      for(const b of bubbles){
+        if(chained)break;
+        if(b!==this&&b.alive){
+          const dx=b.x-this.x,dy=b.y-this.y;
+          if(Math.sqrt(dx*dx+dy*dy)<chainRange+b.r){
+            chained=true;
+            const target=b;
+            setTimeout(()=>{
+              if(target.alive){
+                target.pop(true);
+                popCount++;updateCounter();
+              }
+            },120+Math.random()*150);
+          }
+        }
+      }
+    }
+  }
+}
+
+function updateCounter(){
+  countEl.textContent=popCount;
+  countEl.classList.add('pop');
+  setTimeout(()=>countEl.classList.remove('pop'),150);
+  // Message updates
+  for(let i=messages.length-1;i>=0;i--){
+    if(popCount>=messages[i].at){
+      msgEl.innerHTML=messages[i].text;
+      break;
+    }
+  }
+  if(popCount>3)hintEl.style.display='none';
+}
+
+// Spawn bubbles periodically
+function spawnBubble(){
+  if(bubbles.length<30){
+    bubbles.push(new Bubble());
+  }
+}
+setInterval(spawnBubble,400);
+// Initial burst
+for(let i=0;i<12;i++)bubbles.push(new Bubble(Math.random()*390,200+Math.random()*500));
+
+// Tap handler
+function handleTap(e){
+  e.preventDefault();
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=canvas.width/rect.width;
+  const scaleY=canvas.height/rect.height;
+  const touches=e.changedTouches||[{clientX:e.clientX,clientY:e.clientY}];
+  for(const t of touches){
+    const px=(t.clientX-rect.left)*scaleX;
+    const py=(t.clientY-rect.top)*scaleY;
+    for(const b of bubbles){
+      if(b.alive&&b.contains(px,py)){
+        b.pop(false);
+        popCount++;updateCounter();
+        break;
+      }
+    }
+  }
+}
+canvas.addEventListener('pointerdown',handleTap);
+
+// Main loop
+function loop(){
+  ctx.clearRect(0,0,390,844);
+
+  // Background gradient
+  const bg=ctx.createLinearGradient(0,0,0,844);
+  bg.addColorStop(0,'#0a0a14');
+  bg.addColorStop(1,'#0e0a18');
+  ctx.fillStyle=bg;
+  ctx.fillRect(0,0,390,844);
+
+  // Ripples
+  ripples=ripples.filter(r=>{
+    r.r+=(r.maxR-r.r)*0.08;
+    r.opacity*=0.92;
+    ctx.beginPath();
+    ctx.arc(r.x,r.y,r.r,0,Math.PI*2);
+    ctx.strokeStyle=`hsla(${r.hue},60%,70%,${r.opacity})`;
+    ctx.lineWidth=2;
+    ctx.stroke();
+    return r.opacity>0.01;
+  });
+
+  // Bubbles
+  bubbles=bubbles.filter(b=>{
+    if(!b.alive)return false;
+    b.update();
+    b.draw();
+    return b.alive;
+  });
+
+  // Particles
+  particles=particles.filter(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    p.vy+=0.03; // gravity
+    p.vx*=0.99;
+    p.life=Math.max(0,p.life-p.decay);
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,Math.max(0,p.r*p.life),0,Math.PI*2);
+    ctx.fillStyle=`hsla(${p.hue},70%,70%,${p.life*0.6})`;
+    ctx.fill();
+    return p.life>0;
+  });
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>

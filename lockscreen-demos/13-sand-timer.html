@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>Glint — 沙漏倒计时</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a0f0a 0%, #2d1810 50%, #1a0f0a 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 40px 20px;
+      z-index: 10;
+    }
+
+    .top-section {
+      text-align: center;
+      opacity: 0.7;
+    }
+
+    .bottom-section {
+      text-align: center;
+      opacity: 0.85;
+    }
+
+    .event-name {
+      font-size: 24px;
+      font-weight: 500;
+      color: #f5e6d3;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .event-time {
+      font-size: 18px;
+      color: #d4a574;
+      letter-spacing: 0.08em;
+      font-weight: 300;
+    }
+
+    .countdown-text {
+      font-size: 20px;
+      color: #e8d4b8;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+      font-weight: 400;
+    }
+
+    .glint-label {
+      font-size: 10px;
+      color: #a0826d;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-weight: 600;
+      opacity: 0.6;
+    }
+
+    .tap-hint {
+      font-size: 11px;
+      color: #8a6f5f;
+      letter-spacing: 0.1em;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      margin-top: 20px;
+    }
+
+    .overlay:hover .tap-hint {
+      opacity: 0.5;
+    }
+
+    /* Floating dust motes */
+    @keyframes float {
+      0%, 100% { opacity: 0.1; }
+      50% { opacity: 0.3; }
+    }
+
+    .dust {
+      position: fixed;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 200, 120, 0.3), transparent);
+      pointer-events: none;
+      animation: float 8s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div class="overlay">
+    <div class="top-section">
+      <div class="glint-label">GLINT</div>
+    </div>
+
+    <div class="bottom-section">
+      <div class="countdown-text" id="countdown">3 小时 42 分钟</div>
+      <div class="event-name">团队周会</div>
+      <div class="event-time">14:30</div>
+      <div class="tap-hint">轻触翻转沙漏</div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { antialias: true, alpha: false });
+
+    // Resize canvas
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Configuration
+    const TARGET_TIME = new Date();
+    TARGET_TIME.setHours(14, 30, 0, 0);
+
+    const HOURGLASS = {
+      centerX: canvas.width / 2,
+      centerY: canvas.height / 2,
+      width: Math.min(canvas.width * 0.25, 140),
+      height: Math.min(canvas.height * 0.45, 360),
+      neckWidth: Math.min(canvas.width * 0.04, 30),
+    };
+
+    // Sand particle system
+    class SandParticle {
+      constructor(x, y, flipped = false) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = Math.random() * 1.5 + 0.5;
+        this.radius = Math.random() * 1.5 + 1;
+        this.flipped = flipped;
+        this.hue = 45 - Math.random() * 15; // Gold to amber
+        this.settled = false;
+        this.settleTime = 0;
+      }
+
+      update(hourglass, isTopBulb) {
+        if (this.settled) {
+          this.settleTime++;
+          if (this.settleTime > 30) {
+            this.vy *= 0.98;
+            this.vx *= 0.95;
+          }
+          return;
+        }
+
+        this.vy += 0.15; // Gravity
+        this.vx *= 0.98; // Air resistance
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Collision with hourglass walls
+        if (isTopBulb) {
+          const distFromCenter = Math.hypot(
+            this.x - hourglass.centerX,
+            this.y - (hourglass.centerY - hourglass.height / 3)
+          );
+          const radiusAtY = hourglass.width / 2 * (1 - (this.y - (hourglass.centerY - hourglass.height / 3)) / (hourglass.height / 3));
+
+          if (distFromCenter > radiusAtY - this.radius * 2) {
+            const angle = Math.atan2(this.y - (hourglass.centerY - hourglass.height / 3), this.x - hourglass.centerX);
+            this.x = hourglass.centerX + Math.cos(angle) * (radiusAtY - this.radius * 2);
+            this.y = (hourglass.centerY - hourglass.height / 3) + Math.sin(angle) * (radiusAtY - this.radius * 2);
+            this.vx *= -0.6;
+            this.vy *= -0.4;
+          }
+        } else {
+          const distFromCenter = Math.hypot(
+            this.x - hourglass.centerX,
+            this.y - (hourglass.centerY + hourglass.height / 3)
+          );
+          const radiusAtY = hourglass.width / 2 * ((this.y - (hourglass.centerY + hourglass.height / 3)) / (hourglass.height / 3));
+
+          if (distFromCenter > radiusAtY - this.radius * 2) {
+            const angle = Math.atan2(this.y - (hourglass.centerY + hourglass.height / 3), this.x - hourglass.centerX);
+            this.x = hourglass.centerX + Math.cos(angle) * (radiusAtY - this.radius * 2);
+            this.y = (hourglass.centerY + hourglass.height / 3) + Math.sin(angle) * (radiusAtY - this.radius * 2);
+            this.vx *= -0.6;
+            this.vy *= -0.4;
+          }
+        }
+
+        // Bottom settlement
+        if (!isTopBulb && this.y > hourglass.centerY + hourglass.height / 2.5) {
+          this.settled = true;
+        }
+      }
+
+      draw(ctx, hueShift = 0) {
+        const hue = this.hue + hueShift;
+        ctx.fillStyle = `hsl(${hue}, 70%, 55%)`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    let particles = [];
+    let flipped = false;
+    let flipProgress = 0;
+    let isFlipping = false;
+
+    // Initialize sand (mostly in top bulb)
+    function initializeSand() {
+      particles = [];
+      for (let i = 0; i < 280; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * HOURGLASS.width * 0.35;
+        const x = HOURGLASS.centerX + Math.cos(angle) * dist;
+        const y = HOURGLASS.centerY - HOURGLASS.height * 0.25 + Math.random() * HOURGLASS.height * 0.15;
+        particles.push(new SandParticle(x, y, false));
+      }
+    }
+    initializeSand();
+
+    function drawHourglass(rotation = 0) {
+      ctx.save();
+      ctx.translate(HOURGLASS.centerX, HOURGLASS.centerY);
+      ctx.rotate(rotation);
+      ctx.translate(-HOURGLASS.centerX, -HOURGLASS.centerY);
+
+      // Glass gradient
+      const glassGradient = ctx.createLinearGradient(
+        HOURGLASS.centerX - HOURGLASS.width / 2,
+        HOURGLASS.centerY - HOURGLASS.height / 2,
+        HOURGLASS.centerX + HOURGLASS.width / 2,
+        HOURGLASS.centerY + HOURGLASS.height / 2
+      );
+      glassGradient.addColorStop(0, 'rgba(100, 150, 200, 0.15)');
+      glassGradient.addColorStop(0.5, 'rgba(120, 160, 200, 0.08)');
+      glassGradient.addColorStop(1, 'rgba(100, 150, 200, 0.12)');
+
+      // Top bulb
+      ctx.fillStyle = glassGradient;
+      ctx.beginPath();
+      ctx.ellipse(
+        HOURGLASS.centerX,
+        HOURGLASS.centerY - HOURGLASS.height / 3,
+        HOURGLASS.width / 2,
+        HOURGLASS.height / 3,
+        0,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(200, 200, 200, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Neck (connecting tube)
+      ctx.fillStyle = glassGradient;
+      ctx.fillRect(
+        HOURGLASS.centerX - HOURGLASS.neckWidth / 2,
+        HOURGLASS.centerY - HOURGLASS.neckWidth / 2,
+        HOURGLASS.neckWidth,
+        HOURGLASS.neckWidth
+      );
+      ctx.strokeStyle = 'rgba(200, 200, 200, 0.25)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(
+        HOURGLASS.centerX - HOURGLASS.neckWidth / 2,
+        HOURGLASS.centerY - HOURGLASS.neckWidth / 2,
+        HOURGLASS.neckWidth,
+        HOURGLASS.neckWidth
+      );
+
+      // Bottom bulb
+      ctx.fillStyle = glassGradient;
+      ctx.beginPath();
+      ctx.ellipse(
+        HOURGLASS.centerX,
+        HOURGLASS.centerY + HOURGLASS.height / 3,
+        HOURGLASS.width / 2,
+        HOURGLASS.height / 3,
+        0,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(200, 200, 200, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Highlights/reflections on glass
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.beginPath();
+      ctx.ellipse(
+        HOURGLASS.centerX - HOURGLASS.width * 0.15,
+        HOURGLASS.centerY - HOURGLASS.height * 0.25,
+        HOURGLASS.width * 0.15,
+        HOURGLASS.height * 0.12,
+        -0.3,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function updateCountdown() {
+      const now = new Date();
+      const diff = TARGET_TIME - now;
+
+      if (diff > 0) {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const countdownEl = document.getElementById('countdown');
+        countdownEl.textContent = `${hours} 小时 ${minutes} 分钟`;
+      }
+    }
+
+    function flip() {
+      if (isFlipping) return;
+      isFlipping = true;
+      flipProgress = 0;
+      flipped = !flipped;
+
+      // Move sand to opposite bulb
+      particles.forEach((p) => {
+        p.settled = false;
+        p.vy *= -0.8;
+        p.vx = (Math.random() - 0.5) * 3;
+      });
+    }
+
+    // Mouse/touch interaction
+    document.addEventListener('click', flip);
+    document.addEventListener('touchstart', flip);
+
+    function animate() {
+      // Clear canvas
+      ctx.fillStyle = 'rgb(26, 15, 10)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw background gradient overlay
+      const bgGradient = ctx.createRadialGradient(
+        canvas.width / 2,
+        canvas.height * 0.4,
+        0,
+        canvas.width / 2,
+        canvas.height / 2,
+        Math.max(canvas.width, canvas.height)
+      );
+      bgGradient.addColorStop(0, 'rgba(80, 40, 20, 0.1)');
+      bgGradient.addColorStop(1, 'rgba(20, 10, 5, 0.2)');
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw dust motes
+      ctx.fillStyle = 'rgba(255, 180, 100, 0.03)';
+      for (let i = 0; i < 20; i++) {
+        const x = (canvas.width / 2 + Math.sin(Date.now() * 0.0001 + i) * canvas.width * 0.3);
+        const y = (canvas.height / 2 + Math.cos(Date.now() * 0.00008 + i * 0.5) * canvas.height * 0.3);
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 40 + 20, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Handle flipping animation
+      if (isFlipping) {
+        flipProgress += 0.05;
+        if (flipProgress >= 1) {
+          isFlipping = false;
+          flipProgress = 0;
+        }
+      }
+
+      const easeFlip = flipProgress < 0.5
+        ? Math.sin(flipProgress * Math.PI) * 0.5
+        : Math.sin(flipProgress * Math.PI) * 0.5;
+      const rotation = easeFlip * Math.PI;
+
+      // Update and draw particles
+      const isTopBulb = !flipped;
+      particles.forEach((p) => {
+        p.update(HOURGLASS, isTopBulb);
+        p.draw(ctx, flipped ? 10 : 0);
+      });
+
+      // Draw hourglass
+      drawHourglass(rotation);
+
+      // Glow around hourglass
+      const glowGradient = ctx.createRadialGradient(
+        HOURGLASS.centerX,
+        HOURGLASS.centerY,
+        0,
+        HOURGLASS.centerX,
+        HOURGLASS.centerY,
+        HOURGLASS.width
+      );
+      glowGradient.addColorStop(0, 'rgba(220, 150, 80, 0.08)');
+      glowGradient.addColorStop(1, 'rgba(220, 150, 80, 0)');
+      ctx.fillStyle = glowGradient;
+      ctx.beginPath();
+      ctx.arc(HOURGLASS.centerX, HOURGLASS.centerY, HOURGLASS.width, 0, Math.PI * 2);
+      ctx.fill();
+
+      updateCountdown();
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

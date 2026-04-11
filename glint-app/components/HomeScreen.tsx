@@ -3,7 +3,7 @@ import { PRESET_PROMPTS } from '../constants/prompts';
 import type { PromptSource } from '../services/geminiService';
 
 interface HomeScreenProps {
-  onGenerate: (prompt: string, promptSource: PromptSource) => void;
+  onGenerate: (prompt: string, promptSource: PromptSource, prefabHtml?: string) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onGenerate }) => {
@@ -27,7 +27,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onGenerate }) => {
           <button
             key={i}
             className="home-chip"
-            onClick={() => onGenerate(p.prompt, 'preset')}
+            onClick={() => onGenerate(p.prompt, 'preset', p.prefabHtml)}
           >
             {p.label}
           </button>

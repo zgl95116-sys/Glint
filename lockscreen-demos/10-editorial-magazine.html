@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100;300;400;700;900&family=Noto+Serif+SC:wght@200;400;600;900&family=Playfair+Display:ital,wght@0,400;0,900;1,400&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    width:390px;height:844px;overflow:hidden;
+    background:#f5f0e8;
+    position:relative;
+  }
+
+  .page{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;
+    padding:40px 24px 32px;
+  }
+
+  @keyframes slide-up{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slide-right{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes wipe-in{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @keyframes counter-up{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+  <!-- Decorative diagonal color band -->
+  <div style="position:absolute;top:-100px;right:-60px;width:250px;height:500px;background:linear-gradient(160deg,rgba(200,60,30,0.06),rgba(200,60,30,0.12));transform:rotate(-15deg);border-radius:60px"></div>
+
+  <!-- Red accent stripe -->
+  <div style="position:absolute;top:0;left:24px;width:4px;height:100%;background:linear-gradient(to bottom,transparent,#c83c1e 10%,#c83c1e 90%,transparent);opacity:0.15"></div>
+
+  <div class="page">
+    <!-- Masthead -->
+    <div style="display:flex;justify-content:space-between;align-items:center;animation:slide-up 0.6s ease 0.2s both">
+      <div style="font-family:'Playfair Display',serif;font-size:13px;color:rgba(40,30,20,0.35);letter-spacing:4px;font-style:italic">GLINT DAILY</div>
+      <div style="font-size:12px;color:rgba(40,30,20,0.3);letter-spacing:2px">四月九日 · 周三</div>
+    </div>
+
+    <div style="height:1px;background:rgba(40,30,20,0.1);margin:12px 0;animation:wipe-in 0.8s ease 0.4s both;transform-origin:left"></div>
+
+    <!-- HEADLINE: Pure typography as the hero -->
+    <div style="animation:slide-up 0.8s ease 0.5s both">
+      <div style="font-family:'Noto Serif SC',serif;font-size:52px;font-weight:900;color:rgba(30,25,15,0.92);line-height:1.15;letter-spacing:-1px">
+        你今天<br>
+        走了<span style="font-family:'Playfair Display',serif;font-size:72px;color:#c83c1e;font-weight:900;font-style:italic;letter-spacing:-3px">12,847</span>步
+      </div>
+    </div>
+
+    <div style="height:1px;background:rgba(40,30,20,0.1);margin:16px 0;animation:wipe-in 0.8s ease 0.8s both;transform-origin:left"></div>
+
+    <!-- Subhead + pull quote -->
+    <div style="animation:slide-up 0.7s ease 1s both">
+      <div style="font-family:'Noto Serif SC',serif;font-size:18px;font-weight:200;color:rgba(60,50,35,0.65);line-height:1.6;font-style:italic;border-left:3px solid #c83c1e;padding-left:16px;margin-left:-2px">
+        "比昨天多了 3,200 步。<br>你可能没注意到，<br>但你的身体注意到了。"
+      </div>
+    </div>
+
+    <!-- Data columns — newspaper style -->
+    <div style="display:flex;gap:16px;margin-top:20px;animation:slide-up 0.7s ease 1.3s both">
+      <div style="flex:1;border-right:1px solid rgba(40,30,20,0.06);padding-right:14px">
+        <div style="font-family:'Playfair Display',serif;font-size:44px;font-weight:900;color:rgba(30,25,15,0.85);line-height:1">467</div>
+        <div style="font-size:12px;color:rgba(100,85,60,0.5);letter-spacing:2px;margin-top:4px">千卡消耗</div>
+        <div style="width:100%;height:4px;background:rgba(40,30,20,0.04);border-radius:2px;margin-top:6px">
+          <div style="width:72%;height:100%;background:linear-gradient(90deg,#c83c1e,rgba(200,60,30,0.4));border-radius:2px"></div>
+        </div>
+        <div style="font-size:11px;color:rgba(100,85,60,0.4);margin-top:4px">目标 650 · 72%</div>
+      </div>
+      <div style="flex:1;border-right:1px solid rgba(40,30,20,0.06);padding-right:14px">
+        <div style="font-family:'Playfair Display',serif;font-size:44px;font-weight:900;color:rgba(30,25,15,0.85);line-height:1">6.2</div>
+        <div style="font-size:12px;color:rgba(100,85,60,0.5);letter-spacing:2px;margin-top:4px">小时站立</div>
+        <div style="width:100%;height:4px;background:rgba(40,30,20,0.04);border-radius:2px;margin-top:6px">
+          <div style="width:89%;height:100%;background:linear-gradient(90deg,#2e7d32,rgba(46,125,50,0.4));border-radius:2px"></div>
+        </div>
+        <div style="font-size:11px;color:rgba(100,85,60,0.4);margin-top:4px">目标 7h · 89%</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-family:'Playfair Display',serif;font-size:44px;font-weight:900;color:rgba(30,25,15,0.85);line-height:1">82</div>
+        <div style="font-size:12px;color:rgba(100,85,60,0.5);letter-spacing:2px;margin-top:4px">心率均值</div>
+        <div style="width:100%;height:4px;background:rgba(40,30,20,0.04);border-radius:2px;margin-top:6px">
+          <div style="width:60%;height:100%;background:linear-gradient(90deg,#1565c0,rgba(21,101,192,0.4));border-radius:2px"></div>
+        </div>
+        <div style="font-size:11px;color:rgba(100,85,60,0.4);margin-top:4px">静息区间 · 正常</div>
+      </div>
+    </div>
+
+    <div style="height:1px;background:rgba(40,30,20,0.08);margin:18px 0;animation:wipe-in 0.6s ease 1.6s both;transform-origin:left"></div>
+
+    <!-- Mini step chart — sparkline style -->
+    <div style="animation:slide-right 0.8s ease 1.8s both">
+      <div style="font-size:11px;color:rgba(100,85,60,0.4);letter-spacing:2px;margin-bottom:8px">本周步数</div>
+      <svg viewBox="0 0 342 50" style="width:100%;height:50px">
+        <!-- Bar chart -->
+        <rect x="0" y="30" width="42" height="20" rx="3" fill="rgba(40,30,20,0.06)"/>
+        <rect x="50" y="22" width="42" height="28" rx="3" fill="rgba(40,30,20,0.06)"/>
+        <rect x="100" y="15" width="42" height="35" rx="3" fill="rgba(40,30,20,0.06)"/>
+        <rect x="150" y="25" width="42" height="25" rx="3" fill="rgba(40,30,20,0.06)"/>
+        <rect x="200" y="18" width="42" height="32" rx="3" fill="rgba(40,30,20,0.06)"/>
+        <rect x="250" y="28" width="42" height="22" rx="3" fill="rgba(40,30,20,0.06)"/>
+        <rect x="300" y="5" width="42" height="45" rx="3" fill="rgba(200,60,30,0.2)"/>
+        <!-- Labels -->
+        <text x="21" y="48" text-anchor="middle" font-size="9" fill="rgba(100,85,60,0.3)">一</text>
+        <text x="71" y="48" text-anchor="middle" font-size="9" fill="rgba(100,85,60,0.3)">二</text>
+        <text x="121" y="48" text-anchor="middle" font-size="9" fill="rgba(100,85,60,0.3)">三</text>
+        <text x="171" y="48" text-anchor="middle" font-size="9" fill="rgba(100,85,60,0.3)">四</text>
+        <text x="221" y="48" text-anchor="middle" font-size="9" fill="rgba(100,85,60,0.3)">五</text>
+        <text x="271" y="48" text-anchor="middle" font-size="9" fill="rgba(100,85,60,0.3)">六</text>
+        <text x="321" y="48" text-anchor="middle" font-size="9" fill="rgba(200,60,30,0.6)" font-weight="bold">今</text>
+      </svg>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <!-- Bottom section -->
+    <div style="animation:slide-up 0.6s ease 2.2s both">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div style="font-family:'Noto Serif SC',serif;font-size:16px;color:rgba(60,50,35,0.55);line-height:1.6">
+            今天状态不错。<br>晚上轻松一下就好。
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:rgba(30,25,15,0.15);line-height:0.9;letter-spacing:-2px">22°</div>
+          <div style="font-size:11px;color:rgba(100,85,60,0.3);margin-top:2px">多云</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:1px;background:rgba(40,30,20,0.06);margin-top:12px;animation:wipe-in 0.5s ease 2.5s both;transform-origin:right"></div>
+    <div style="text-align:center;margin-top:8px;animation:slide-up 0.5s ease 2.6s both">
+      <span style="font-family:'Playfair Display',serif;font-size:10px;color:rgba(40,30,20,0.15);letter-spacing:6px;font-style:italic">VOL. 99 · GLINT EDITORIAL</span>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100;300;400;500;700;900&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    width:390px;height:844px;overflow:hidden;
+    font-family:'Noto Sans SC',system-ui,sans-serif;
+    background:#080a0e;
+    position:relative;
+  }
+
+  /* === STORM SKY === */
+  .storm-sky{
+    position:absolute;inset:0;
+    background:
+      linear-gradient(170deg, #0c0e14 0%, #141824 30%, #1c2030 50%, #181c28 100%);
+  }
+
+  /* === RAIN LAYER === */
+  .rain-container{
+    position:absolute;inset:0;overflow:hidden;pointer-events:none;
+  }
+  .raindrop{
+    position:absolute;
+    width:1.5px;
+    background:linear-gradient(to bottom, transparent, rgba(140,180,220,0.4), transparent);
+    animation:rain-fall linear infinite;
+  }
+  @keyframes rain-fall{
+    from{transform:translateY(-10vh) rotate(12deg)}
+    to{transform:translateY(110vh) rotate(12deg)}
+  }
+
+  /* === LIGHTNING FLASH === */
+  .lightning{
+    position:absolute;inset:0;
+    background:rgba(180,200,255,0.12);
+    opacity:0;
+    animation:flash 7s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes flash{
+    0%,100%{opacity:0}
+    43%{opacity:0}
+    44%{opacity:0.8}
+    45%{opacity:0}
+    46%{opacity:0.4}
+    47%{opacity:0}
+  }
+
+  /* === WET GLASS EFFECT === */
+  .wet-glass{
+    position:absolute;inset:0;
+    backdrop-filter:blur(1px);
+    -webkit-backdrop-filter:blur(1px);
+    pointer-events:none;
+  }
+
+  /* === URGENT RED PULSE === */
+  @keyframes urgent-pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(255,60,40,0.3)}
+    50%{box-shadow:0 0 0 8px rgba(255,60,40,0)}
+  }
+  @keyframes countdown-tick{
+    0%,100%{transform:scale(1)}
+    50%{transform:scale(1.02)}
+  }
+
+  .grain{
+    position:absolute;inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+    pointer-events:none;opacity:0.4;
+  }
+
+  .content{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;
+    padding:44px 24px 36px;
+    z-index:10;
+  }
+
+  @keyframes slide-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    10%{transform:translateX(-2px)}
+    20%{transform:translateX(2px)}
+    30%{transform:translateX(-1px)}
+    40%{transform:translateX(1px)}
+    50%{transform:translateX(0)}
+  }
+</style>
+</head>
+<body>
+  <div class="storm-sky"></div>
+
+  <!-- Rain -->
+  <div class="rain-container">
+    <div class="raindrop" style="left:5%;height:18vh;animation-duration:0.5s"></div>
+    <div class="raindrop" style="left:12%;height:22vh;animation-duration:0.45s;animation-delay:0.1s"></div>
+    <div class="raindrop" style="left:20%;height:16vh;animation-duration:0.55s;animation-delay:0.2s"></div>
+    <div class="raindrop" style="left:28%;height:20vh;animation-duration:0.48s;animation-delay:0.05s"></div>
+    <div class="raindrop" style="left:35%;height:24vh;animation-duration:0.42s;animation-delay:0.15s"></div>
+    <div class="raindrop" style="left:42%;height:15vh;animation-duration:0.6s;animation-delay:0.25s"></div>
+    <div class="raindrop" style="left:50%;height:19vh;animation-duration:0.5s;animation-delay:0.08s"></div>
+    <div class="raindrop" style="left:58%;height:21vh;animation-duration:0.47s;animation-delay:0.18s"></div>
+    <div class="raindrop" style="left:65%;height:17vh;animation-duration:0.53s;animation-delay:0.3s"></div>
+    <div class="raindrop" style="left:72%;height:23vh;animation-duration:0.44s;animation-delay:0.12s"></div>
+    <div class="raindrop" style="left:80%;height:14vh;animation-duration:0.58s;animation-delay:0.22s"></div>
+    <div class="raindrop" style="left:88%;height:20vh;animation-duration:0.46s;animation-delay:0.02s"></div>
+    <div class="raindrop" style="left:95%;height:18vh;animation-duration:0.52s;animation-delay:0.16s"></div>
+    <!-- Second layer - thinner -->
+    <div class="raindrop" style="left:8%;height:12vh;animation-duration:0.65s;animation-delay:0.3s;width:1px;opacity:0.5"></div>
+    <div class="raindrop" style="left:25%;height:14vh;animation-duration:0.7s;animation-delay:0.35s;width:1px;opacity:0.5"></div>
+    <div class="raindrop" style="left:45%;height:10vh;animation-duration:0.75s;animation-delay:0.4s;width:1px;opacity:0.5"></div>
+    <div class="raindrop" style="left:62%;height:13vh;animation-duration:0.68s;animation-delay:0.32s;width:1px;opacity:0.5"></div>
+    <div class="raindrop" style="left:85%;height:11vh;animation-duration:0.72s;animation-delay:0.28s;width:1px;opacity:0.5"></div>
+  </div>
+
+  <div class="lightning"></div>
+  <div class="grain"></div>
+
+  <div class="content">
+    <!-- URGENT TAG -->
+    <div style="animation:slide-in 0.5s ease 0.3s both">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,50,40,0.12);border:1px solid rgba(255,50,40,0.25);border-radius:24px;padding:8px 16px;animation:urgent-pulse 2s ease infinite">
+        <div style="width:8px;height:8px;border-radius:50%;background:#ff3b30"></div>
+        <span style="font-size:14px;color:rgba(255,100,80,0.95);font-weight:500;letter-spacing:1px">38 分钟后开会</span>
+      </div>
+    </div>
+
+    <!-- HERO: Giant countdown number -->
+    <div style="margin-top:16px;animation:slide-in 0.6s ease 0.5s both">
+      <div style="font-size:200px;font-weight:900;color:rgba(255,255,255,0.92);line-height:0.8;letter-spacing:-10px;text-shadow:0 4px 40px rgba(0,0,0,0.5);animation:countdown-tick 2s ease-in-out infinite">
+        38
+      </div>
+      <div style="font-size:28px;font-weight:100;color:rgba(255,255,255,0.5);margin-top:4px;letter-spacing:8px">MINUTES</div>
+    </div>
+
+    <!-- AI VOICE — sharp, decisive -->
+    <div style="margin-top:24px;animation:slide-in 0.7s ease 0.8s both">
+      <div style="font-size:22px;font-weight:300;color:rgba(255,255,255,0.88);line-height:1.6;text-shadow:0 1px 10px rgba(0,0,0,0.5)">
+        外面暴雨，别等了。<br>
+        <span style="color:rgba(100,180,255,0.9);font-weight:500">现在叫车，25 分钟到。</span>
+      </div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <!-- Meeting intel card -->
+    <div style="animation:slide-in 0.8s ease 1.1s both;margin-bottom:12px">
+      <div style="background:rgba(0,0,0,0.4);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-radius:20px;padding:20px;border:1px solid rgba(100,160,255,0.08)">
+        <!-- Meeting header -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div>
+            <div style="font-size:18px;font-weight:500;color:rgba(255,255,255,0.9)">Q3 产品评审</div>
+            <div style="font-size:13px;color:rgba(140,180,220,0.6);margin-top:2px">B-803 · 14:00 - 15:30</div>
+          </div>
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(100,160,255,0.15),rgba(100,160,255,0.05));display:flex;align-items:center;justify-content:center;border:1px solid rgba(100,160,255,0.1)">
+            <span style="font-size:20px">📊</span>
+          </div>
+        </div>
+
+        <!-- Data strips -->
+        <div style="display:flex;gap:0;border-top:1px solid rgba(255,255,255,0.06);padding-top:14px">
+          <div style="flex:1;border-right:1px solid rgba(255,255,255,0.06);padding-right:12px">
+            <div style="font-size:11px;color:rgba(140,180,220,0.5);letter-spacing:2px;margin-bottom:4px">参会</div>
+            <div style="font-size:16px;color:rgba(255,255,255,0.85)">7 人</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px">张总 · 李明 · 产品×4</div>
+          </div>
+          <div style="flex:1;padding-left:12px">
+            <div style="font-size:11px;color:rgba(140,180,220,0.5);letter-spacing:2px;margin-bottom:4px">材料</div>
+            <div style="font-size:16px;color:rgba(255,255,255,0.85)">已就绪</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px">汇报摘要 3 页已生成</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action bar -->
+    <div style="animation:slide-in 0.8s ease 1.4s both;margin-bottom:12px">
+      <div style="display:flex;gap:10px">
+        <div style="flex:1;background:rgba(100,160,255,0.15);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:14px;padding:14px;text-align:center;border:1px solid rgba(100,160,255,0.2)">
+          <div style="font-size:22px;margin-bottom:4px">🚗</div>
+          <div style="font-size:14px;color:rgba(100,180,255,0.9);font-weight:500">叫车</div>
+          <div style="font-size:11px;color:rgba(140,180,220,0.5);margin-top:2px">预计 25min</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,0.04);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:14px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.06)">
+          <div style="font-size:22px;margin-bottom:4px">📋</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.85);font-weight:500">看摘要</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">3 页 PDF</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,0.04);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:14px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.06)">
+          <div style="font-size:22px;margin-bottom:4px">⏰</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.85);font-weight:500">提醒</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">出发前 5min</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Temperature + Footer -->
+    <div style="display:flex;justify-content:space-between;align-items:center;animation:slide-in 0.8s ease 1.6s both">
+      <div style="font-size:28px;font-weight:100;color:rgba(140,180,220,0.5)">18° 暴雨</div>
+      <div style="font-size:11px;color:rgba(140,180,220,0.15);letter-spacing:6px">GLINT · STORM</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -6,6 +6,7 @@ interface LockScreenProps {
   isLoading: boolean;
   isActive: boolean;
   revealPhase: 'idle' | 'blurred' | 'revealing';
+  sandboxSessionKey: number;
   onBack: () => void;
 }
 
@@ -23,11 +24,18 @@ const FILTER_STYLES: Record<string, React.CSSProperties> = {
   },
 };
 
-export const LockScreen: React.FC<LockScreenProps> = ({ htmlContent, isLoading, isActive, revealPhase, onBack }) => {
+export const LockScreen: React.FC<LockScreenProps> = ({
+  htmlContent,
+  isLoading,
+  isActive,
+  revealPhase,
+  sandboxSessionKey,
+  onBack,
+}) => {
   return (
     <div className={`lock-screen${isActive ? ' lock-screen-active' : ' lock-screen-idle'}`}>
       <div className="lock-sandbox-wrap" style={FILTER_STYLES[revealPhase]}>
-        <Sandbox htmlContent={htmlContent} />
+        <Sandbox key={sandboxSessionKey} htmlContent={htmlContent} />
       </div>
 
       {isActive && (

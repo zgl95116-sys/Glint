@@ -1,0 +1,231 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    width:390px;height:844px;overflow:hidden;
+    font-family:system-ui,sans-serif;
+    background:#0c0b10;
+    position:relative;
+  }
+  canvas{position:absolute;inset:0;z-index:1}
+  .overlay{
+    position:absolute;inset:0;z-index:10;pointer-events:none;
+    display:flex;flex-direction:column;
+    padding:48px 28px 40px;
+  }
+  .footer{
+    font-size:11px;color:rgba(200,180,140,0.15);letter-spacing:6px;text-align:center;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="overlay">
+  <div style="flex:1"></div>
+  <div class="footer">GLINT · GENERATIVE</div>
+</div>
+
+<script>
+// Generative zen garden — evolving geometric patterns
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+canvas.width=390;canvas.height=844;
+
+let time=0;
+
+// Pattern system — each "stone" is a generative element
+class Stone{
+  constructor(){
+    this.x=60+Math.random()*270;
+    this.y=100+Math.random()*644;
+    this.type=Math.floor(Math.random()*4); // circle, triangle, wave, dot cluster
+    this.size=20+Math.random()*50;
+    this.rotation=Math.random()*Math.PI*2;
+    this.rotSpeed=(Math.random()-0.5)*0.002;
+    this.phase=Math.random()*Math.PI*2;
+    this.hue=30+Math.random()*30; // warm sand tones
+    this.sat=10+Math.random()*20;
+    this.birth=time;
+    this.lifespan=15000+Math.random()*20000;
+    this.opacity=0;
+  }
+  get age(){return time-this.birth}
+  get alive(){return this.age<this.lifespan}
+  get fadeIn(){return Math.min(1,this.age/2000)}
+  get fadeOut(){return Math.max(0,1-(this.age-this.lifespan+2000)/2000)}
+  get alpha(){return this.fadeIn*this.fadeOut*0.6}
+}
+
+let stones=[];
+for(let i=0;i<8;i++){
+  const s=new Stone();
+  s.birth=-Math.random()*10000; // stagger
+  stones.push(s);
+}
+
+// Sand ripples — concentric arcs around stones
+function drawRipples(s){
+  const a=s.alpha;
+  if(a<=0)return;
+  const rings=3+Math.floor(s.size/20);
+  for(let i=1;i<=rings;i++){
+    const r=s.size+i*12+Math.sin(time*0.0005+i)*3;
+    const startAngle=s.rotation+Math.sin(time*0.0003+s.phase)*0.3;
+    const arc=Math.PI*(0.6+Math.sin(time*0.0004+i*0.5)*0.3);
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,r,startAngle,startAngle+arc);
+    ctx.strokeStyle=`hsla(${s.hue},${s.sat}%,60%,${a*0.12*(1-i/rings)})`;
+    ctx.lineWidth=1;
+    ctx.stroke();
+  }
+}
+
+function drawStone(s){
+  const a=s.alpha;
+  if(a<=0)return;
+  ctx.save();
+  ctx.translate(s.x,s.y);
+  ctx.rotate(s.rotation+time*s.rotSpeed);
+
+  switch(s.type){
+    case 0: // Enso circle — not quite closed
+      const gap=0.4+Math.sin(time*0.0003+s.phase)*0.15;
+      ctx.beginPath();
+      ctx.arc(0,0,s.size,gap,Math.PI*2-gap);
+      ctx.strokeStyle=`hsla(${s.hue},${s.sat}%,70%,${a*0.4})`;
+      ctx.lineWidth=2+s.size*0.05;
+      ctx.lineCap='round';
+      ctx.stroke();
+      // Inner dot
+      ctx.beginPath();
+      ctx.arc(0,0,3,0,Math.PI*2);
+      ctx.fillStyle=`hsla(${s.hue},${s.sat}%,80%,${a*0.3})`;
+      ctx.fill();
+      break;
+
+    case 1: // Triangle / mountain
+      const h=s.size*1.2;
+      const w=s.size;
+      ctx.beginPath();
+      ctx.moveTo(0,-h/2);
+      ctx.lineTo(w/2,h/2);
+      ctx.lineTo(-w/2,h/2);
+      ctx.closePath();
+      ctx.fillStyle=`hsla(${s.hue},${s.sat-5}%,30%,${a*0.2})`;
+      ctx.fill();
+      ctx.strokeStyle=`hsla(${s.hue},${s.sat}%,65%,${a*0.3})`;
+      ctx.lineWidth=1;
+      ctx.stroke();
+      break;
+
+    case 2: // Wave form
+      ctx.beginPath();
+      for(let i=-3;i<=3;i++){
+        const wx=i*s.size*0.4;
+        const wy=Math.sin(i*0.8+time*0.002+s.phase)*s.size*0.25;
+        if(i===-3)ctx.moveTo(wx,wy);
+        else ctx.lineTo(wx,wy);
+      }
+      ctx.strokeStyle=`hsla(${s.hue},${s.sat}%,65%,${a*0.35})`;
+      ctx.lineWidth=2;
+      ctx.lineCap='round';
+      ctx.stroke();
+      break;
+
+    case 3: // Dot constellation
+      const dots=5+Math.floor(s.size/10);
+      for(let i=0;i<dots;i++){
+        const da=i/dots*Math.PI*2+time*0.0003;
+        const dr=s.size*0.3*(0.5+Math.sin(time*0.001+i)*0.5);
+        const dx=Math.cos(da)*dr;
+        const dy=Math.sin(da)*dr;
+        ctx.beginPath();
+        ctx.arc(dx,dy,1.5+Math.sin(time*0.002+i)*0.5,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${s.hue},${s.sat}%,75%,${a*0.4})`;
+        ctx.fill();
+        // Connect to neighbor
+        if(i>0){
+          const pa=(i-1)/dots*Math.PI*2+time*0.0003;
+          const pr=s.size*0.3*(0.5+Math.sin(time*0.001+(i-1))*0.5);
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(pa)*pr,Math.sin(pa)*pr);
+          ctx.lineTo(dx,dy);
+          ctx.strokeStyle=`hsla(${s.hue},${s.sat}%,60%,${a*0.08})`;
+          ctx.lineWidth=0.5;
+          ctx.stroke();
+        }
+      }
+      break;
+  }
+  ctx.restore();
+  drawRipples(s);
+}
+
+// Horizontal rake lines across the sand
+function drawRakeLines(){
+  const lineCount=60;
+  for(let i=0;i<lineCount;i++){
+    const y=14*i+Math.sin(time*0.0002+i*0.3)*4;
+    if(y<0||y>844)continue;
+
+    ctx.beginPath();
+    let prevAvoid=false;
+    for(let x=0;x<390;x+=3){
+      // Deflect around stones
+      let deflect=0;
+      for(const s of stones){
+        if(s.alpha<=0)continue;
+        const dx=x-s.x,dy=y-s.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        const influence=s.size*1.5;
+        if(dist<influence){
+          deflect+=(1-dist/influence)*20*(dy>0?1:-1);
+        }
+      }
+      const fy=y+deflect+Math.sin(x*0.02+time*0.0003)*1.5;
+      if(x===0)ctx.moveTo(x,fy);
+      else ctx.lineTo(x,fy);
+    }
+    ctx.strokeStyle=`rgba(200,180,140,${0.04+Math.sin(i*0.5)*0.01})`;
+    ctx.lineWidth=0.5;
+    ctx.stroke();
+  }
+}
+
+// Background texture
+function drawBackground(){
+  // Warm dark gradient
+  const g=ctx.createRadialGradient(195,422,0,195,422,500);
+  g.addColorStop(0,'#12110a');
+  g.addColorStop(1,'#0a0908');
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,390,844);
+}
+
+function loop(ts){
+  time=ts||0;
+
+  drawBackground();
+  drawRakeLines();
+
+  // Remove dead, add new
+  stones=stones.filter(s=>s.alive);
+  if(stones.length<10&&Math.random()<0.02){
+    stones.push(new Stone());
+  }
+
+  for(const s of stones){
+    drawStone(s);
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

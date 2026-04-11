@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>种一棵树 · Glint Lockscreen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans CJK SC', sans-serif;
+            touch-action: manipulation;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, #2d1810 0%, #1a3d2a 40%, #0f2a3d 70%, #0d0d0d 100%);
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 48px 24px 48px 24px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .message {
+            font-size: 18px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.8s ease;
+            min-height: 28px;
+        }
+
+        .progress-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .progress-bar {
+            width: 120px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 1px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #9d7e5d, #d4a574);
+            transition: width 0.6s ease;
+        }
+
+        .tap-hint {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .energy-pulse {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 200, 100, 0.8) 0%, rgba(255, 200, 100, 0) 100%);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="ui-overlay">
+        <div></div>
+        <div class="message" id="message">轻轻一触，树苗萌芽</div>
+        <div></div>
+        <div class="progress-info">
+            <span>今日成长</span>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span id="progressPercent">0%</span>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const messageEl = document.getElementById('message');
+        const progressFillEl = document.getElementById('progressFill');
+        const progressPercentEl = document.getElementById('progressPercent');
+
+        // Resize canvas to window size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Tree state
+        const tree = {
+            x: canvas.width / 2,
+            y: canvas.height * 0.75,
+            growth: 0, // 0 to 1
+            branches: [],
+            leaves: [],
+            flowers: [],
+            sway: 0,
+            energyPulses: [],
+            particles: [],
+            tapCount: 0,
+            maxTaps: 15
+        };
+
+        // Seeded random for reproducible generation
+        function seededRandom(seed) {
+            const x = Math.sin(seed) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // Initialize branch structure
+        function initializeTree() {
+            tree.branches = [];
+            tree.leaves = [];
+            tree.flowers = [];
+            tree.particles = [];
+
+            const trunkHeight = 80 + tree.growth * 120;
+            const trunkWidth = 8 + tree.growth * 4;
+
+            createBranches(
+                tree.x,
+                tree.y,
+                -Math.PI / 2,
+                trunkWidth,
+                trunkHeight,
+                0,
+                tree.growth
+            );
+
+            // Add leaves based on growth
+            if (tree.growth > 0.15) {
+                generateLeaves();
+            }
+
+            // Add flowers when mature
+            if (tree.growth > 0.8) {
+                generateFlowers();
+            }
+        }
+
+        function createBranches(x, y, angle, width, length, depth, growthFactor) {
+            if (width < 0.5 || length < 4 || depth > 12) return;
+
+            // Scale by growth factor
+            const scaledLength = length * Math.pow(growthFactor, 1 - depth / 10);
+
+            const endX = x + Math.cos(angle) * scaledLength;
+            const endY = y + Math.sin(angle) * scaledLength;
+
+            tree.branches.push({
+                x1: x,
+                y1: y,
+                x2: endX,
+                y2: endY,
+                width: width,
+                depth: depth,
+                angle: angle
+            });
+
+            // Branch angles with organic variation
+            const angleVariation = 0.4 + seededRandom(depth * 100 + angle) * 0.3;
+            const leftAngle = angle - (0.35 + angleVariation);
+            const rightAngle = angle + (0.35 + angleVariation);
+
+            // Recursive branching with growth decay
+            const branchDecay = 0.75 + seededRandom(depth * 200) * 0.15;
+            const newWidth = width * 0.7;
+            const newLength = scaledLength * branchDecay;
+
+            createBranches(endX, endY, leftAngle, newWidth, newLength, depth + 1, growthFactor);
+            createBranches(endX, endY, rightAngle, newWidth, newLength, depth + 1, growthFactor);
+        }
+
+        function generateLeaves() {
+            tree.leaves = [];
+            const leafCount = Math.floor(40 + tree.growth * 200);
+
+            for (let i = 0; i < leafCount; i++) {
+                const branchIdx = Math.floor(seededRandom(i * 31) * tree.branches.length);
+                const branch = tree.branches[branchIdx];
+                const t = 0.3 + seededRandom(i * 17) * 0.7;
+
+                const x = branch.x1 + (branch.x2 - branch.x1) * t;
+                const y = branch.y1 + (branch.y2 - branch.y1) * t;
+                const offsetDist = 8 + seededRandom(i * 23) * 12;
+                const offsetAngle = branch.angle + (seededRandom(i * 29) - 0.5) * Math.PI;
+
+                tree.leaves.push({
+                    x: x + Math.cos(offsetAngle) * offsetDist,
+                    y: y + Math.sin(offsetAngle) * offsetDist,
+                    angle: seededRandom(i * 37) * Math.PI * 2,
+                    phase: seededRandom(i * 41) * Math.PI * 2,
+                    greenShade: Math.floor(seededRandom(i * 43) * 3), // 0-2
+                    size: 3 + seededRandom(i * 47) * 2
+                });
+            }
+        }
+
+        function generateFlowers() {
+            tree.flowers = [];
+            const flowerCount = Math.floor(15 + tree.growth * 20);
+
+            for (let i = 0; i < flowerCount; i++) {
+                const branchIdx = Math.floor(seededRandom(i * 53) * tree.branches.length);
+                const branch = tree.branches[branchIdx];
+                const t = 0.4 + seededRandom(i * 59) * 0.5;
+
+                const x = branch.x1 + (branch.x2 - branch.x1) * t;
+                const y = branch.y1 + (branch.y2 - branch.y1) * t;
+                const offsetDist = 12 + seededRandom(i * 61) * 8;
+                const offsetAngle = branch.angle + (seededRandom(i * 67) - 0.5) * Math.PI;
+
+                tree.flowers.push({
+                    x: x + Math.cos(offsetAngle) * offsetDist,
+                    y: y + Math.sin(offsetAngle) * offsetDist,
+                    phase: seededRandom(i * 71) * Math.PI * 2,
+                    petals: 5 + Math.floor(seededRandom(i * 73) * 3),
+                    size: 4 + seededRandom(i * 79) * 3,
+                    color: seededRandom(i * 83) > 0.5 ? 'pink' : 'white'
+                });
+            }
+        }
+
+        function drawBranches() {
+            for (const branch of tree.branches) {
+                const depthShade = Math.floor(100 + branch.depth * 15);
+                const color = `rgb(${depthShade * 0.6}, ${depthShade * 0.5}, ${depthShade * 0.3})`;
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = branch.width;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                ctx.beginPath();
+                ctx.moveTo(branch.x1, branch.y1);
+                ctx.lineTo(branch.x2, branch.y2);
+                ctx.stroke();
+            }
+        }
+
+        function drawLeaves() {
+            const time = Date.now() * 0.0005;
+
+            for (const leaf of tree.leaves) {
+                const sway = Math.sin(time + leaf.phase) * 0.15;
+                const swayAngle = leaf.angle + sway;
+
+                const greenColors = [
+                    { r: 80, g: 140, b: 70 },
+                    { r: 100, g: 160, b: 80 },
+                    { r: 110, g: 155, b: 90 }
+                ];
+                const color = greenColors[leaf.greenShade];
+
+                ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`;
+                ctx.save();
+                ctx.translate(leaf.x, leaf.y);
+                ctx.rotate(swayAngle);
+                ctx.fillRect(-leaf.size * 0.4, -leaf.size * 0.7, leaf.size * 0.8, leaf.size * 1.4);
+                ctx.restore();
+            }
+        }
+
+        function drawFlowers() {
+            const time = Date.now() * 0.0002;
+
+            for (const flower of tree.flowers) {
+                const bob = Math.sin(time + flower.phase) * 2;
+                const scale = 0.8 + Math.sin(time * 0.5 + flower.phase) * 0.2;
+
+                if (flower.color === 'pink') {
+                    ctx.fillStyle = `rgba(255, 150, 180, ${0.7 + Math.sin(time + flower.phase) * 0.2})`;
+                } else {
+                    ctx.fillStyle = `rgba(255, 255, 240, ${0.8 + Math.sin(time + flower.phase) * 0.15})`;
+                }
+
+                // Draw flower petals
+                const petalRadius = flower.size * scale;
+                const angleStep = (Math.PI * 2) / flower.petals;
+
+                for (let i = 0; i < flower.petals; i++) {
+                    const angle = i * angleStep;
+                    const px = flower.x + Math.cos(angle) * petalRadius;
+                    const py = flower.y + Math.sin(angle) * petalRadius + bob;
+
+                    ctx.beginPath();
+                    ctx.ellipse(px, py, flower.size * 0.5 * scale, flower.size * 0.6 * scale, angle, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Center
+                ctx.fillStyle = 'rgba(255, 200, 100, 0.9)';
+                ctx.beginPath();
+                ctx.arc(flower.x, flower.y + bob, flower.size * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawGround() {
+            // Ground gradient
+            const groundY = tree.y + 20;
+            const gradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(45, 24, 16, 0.3)');
+            gradient.addColorStop(1, 'rgba(20, 10, 5, 0.8)');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, groundY, canvas.width, canvas.height);
+
+            // Grass tufts
+            const grassCount = Math.floor(canvas.width / 30);
+            ctx.strokeStyle = 'rgba(100, 130, 80, 0.4)';
+            ctx.lineWidth = 1.5;
+
+            for (let i = 0; i < grassCount; i++) {
+                const x = (i / grassCount) * canvas.width;
+                const grassHeight = 3 + Math.sin(i * 0.5) * 2;
+
+                for (let j = 0; j < 3; j++) {
+                    const offsetX = (Math.random() - 0.5) * 8;
+                    ctx.beginPath();
+                    ctx.moveTo(x + offsetX, groundY);
+                    ctx.quadraticCurveTo(
+                        x + offsetX + Math.sin(i * 0.1 + j) * 2,
+                        groundY - grassHeight * 0.5,
+                        x + offsetX + (Math.random() - 0.5) * 3,
+                        groundY - grassHeight
+                    );
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawEnergyPulses() {
+            tree.energyPulses = tree.energyPulses.filter(pulse => {
+                const progress = (Date.now() - pulse.startTime) / 800;
+                if (progress > 1) return false;
+
+                const radius = pulse.initialRadius + progress * 200;
+                const opacity = 1 - progress;
+
+                ctx.fillStyle = `rgba(255, 200, 100, ${opacity * 0.6})`;
+                ctx.beginPath();
+                ctx.arc(pulse.x, pulse.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Particles
+                for (let i = 0; i < 3; i++) {
+                    const angle = (i / 3) * Math.PI * 2 + progress * Math.PI * 2;
+                    const dist = radius * 0.7;
+                    const px = pulse.x + Math.cos(angle) * dist;
+                    const py = pulse.y + Math.sin(angle) * dist;
+
+                    ctx.fillStyle = `rgba(255, 220, 150, ${opacity * 0.4})`;
+                    ctx.fillRect(px - 2, py - 2, 4, 4);
+                }
+
+                return true;
+            });
+        }
+
+        function drawParticles() {
+            const time = Date.now() * 0.0005;
+
+            tree.particles = tree.particles.filter(particle => {
+                particle.age++;
+                if (particle.age > particle.life) return false;
+
+                const progress = particle.age / particle.life;
+                const opacity = 1 - progress;
+                const sway = Math.sin(time * 2 + particle.phase) * 10;
+
+                ctx.fillStyle = `rgba(${particle.r}, ${particle.g}, ${particle.b}, ${opacity * 0.6})`;
+                ctx.globalAlpha = opacity;
+                ctx.fillRect(
+                    particle.x + sway - 1,
+                    particle.y - particle.age * 0.5 - 1,
+                    2,
+                    2
+                );
+                ctx.globalAlpha = 1;
+
+                return true;
+            });
+        }
+
+        function createParticles() {
+            if (tree.growth < 0.8) return;
+
+            if (Math.random() < 0.3) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 30 + Math.random() * 50;
+                const startX = tree.x + Math.cos(angle) * dist;
+                const startY = tree.y - 50 - Math.random() * 80;
+
+                tree.particles.push({
+                    x: startX,
+                    y: startY,
+                    age: 0,
+                    life: 80 + Math.random() * 120,
+                    phase: Math.random() * Math.PI * 2,
+                    r: Math.floor(200 + Math.random() * 55),
+                    g: Math.floor(150 + Math.random() * 80),
+                    b: Math.floor(100 + Math.random() * 60)
+                });
+            }
+        }
+
+        function updateMessage() {
+            const messages = [
+                '轻轻一触，树苗萌芽',
+                '根系在深处扎根',
+                '新枝茁壮成长',
+                '叶脉舒展向阳',
+                '枝繁叶茂，蓬勃生机',
+                '花蕾初绽',
+                '绽放新生，今日圆满'
+            ];
+
+            const stage = Math.floor(tree.growth * (messages.length - 1));
+            messageEl.textContent = messages[Math.min(stage, messages.length - 1)];
+        }
+
+        function updateProgress() {
+            const percent = Math.min(100, Math.floor(tree.growth * 100));
+            progressPercentEl.textContent = percent + '%';
+            progressFillEl.style.width = percent + '%';
+        }
+
+        function handleTap(e) {
+            if (e.target !== canvas) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Increase growth
+            tree.tapCount++;
+            const newGrowth = Math.min(1, tree.tapCount / tree.maxTaps);
+
+            if (newGrowth > tree.growth) {
+                tree.growth = newGrowth;
+                initializeTree();
+                updateMessage();
+                updateProgress();
+            }
+
+            // Add energy pulse at tap location
+            tree.energyPulses.push({
+                x: x,
+                y: y,
+                startTime: Date.now(),
+                initialRadius: 5
+            });
+
+            // Add particles
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                tree.particles.push({
+                    x: x + Math.cos(angle) * 5,
+                    y: y + Math.sin(angle) * 5,
+                    age: 0,
+                    life: 40 + Math.random() * 20,
+                    phase: Math.random() * Math.PI * 2,
+                    r: 255,
+                    g: 200,
+                    b: 100
+                });
+            }
+        }
+
+        canvas.addEventListener('click', handleTap);
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+
+                tree.tapCount++;
+                const newGrowth = Math.min(1, tree.tapCount / tree.maxTaps);
+
+                if (newGrowth > tree.growth) {
+                    tree.growth = newGrowth;
+                    initializeTree();
+                    updateMessage();
+                    updateProgress();
+                }
+
+                tree.energyPulses.push({
+                    x: x,
+                    y: y,
+                    startTime: Date.now(),
+                    initialRadius: 5
+                });
+
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    tree.particles.push({
+                        x: x + Math.cos(angle) * 5,
+                        y: y + Math.sin(angle) * 5,
+                        age: 0,
+                        life: 40 + Math.random() * 20,
+                        phase: Math.random() * Math.PI * 2,
+                        r: 255,
+                        g: 200,
+                        b: 100
+                    });
+                }
+            }
+        });
+
+        // Initialize
+        initializeTree();
+        updateMessage();
+        updateProgress();
+
+        // Animation loop
+        function animate() {
+            // Clear canvas
+            ctx.fillStyle = canvas.style.background || '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw elements
+            drawGround();
+            drawBranches();
+            drawLeaves();
+            drawFlowers();
+            drawEnergyPulses();
+            createParticles();
+            drawParticles();
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

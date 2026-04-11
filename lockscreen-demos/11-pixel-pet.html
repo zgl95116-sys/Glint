@@ -1,0 +1,237 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><meta name="color-scheme" content="dark">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;image-rendering:pixelated}
+body{overflow:hidden;background:#1a1a2e;font-family:monospace;touch-action:none}
+canvas{position:absolute;inset:0;z-index:1}
+.ui{position:absolute;inset:0;z-index:10;pointer-events:none;display:flex;flex-direction:column;padding:10% 7% 6%}
+.mood-bar{display:flex;gap:6px;margin-top:8px}
+.mood-seg{height:8px;border-radius:4px;transition:width .5s ease}
+</style></head><body>
+<canvas id="c"></canvas>
+<div class="ui">
+<div style="font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:4px">GLINT PET · DAY 47</div>
+<div style="display:flex;align-items:baseline;gap:8px;margin-top:4px">
+<span id="petname" style="font-size:22px;color:rgba(255,255,255,0.85)">小灵</span>
+<span id="status" style="font-size:13px;color:rgba(255,200,100,0.6)">心情不错</span>
+</div>
+<div class="mood-bar" id="moodbar"></div>
+<div style="flex:1"></div>
+<div id="msg" style="font-size:18px;color:rgba(255,255,255,0.75);text-align:center;line-height:1.6;text-shadow:0 1px 6px rgba(0,0,0,0.5)">点一下它试试</div>
+<div style="text-align:center;margin-top:12px;font-size:11px;color:rgba(255,255,255,0.15);letter-spacing:6px">TAP TO PET</div>
+</div>
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d');
+const W=()=>window.innerWidth,H=()=>window.innerHeight;
+function resize(){C.width=W();C.height=H()}
+resize();window.addEventListener('resize',resize);
+
+let t=0,petY=0,petState='idle',stateTimer=0,hearts=[],zzz=[],petTaps=0;
+const msgEl=document.getElementById('msg'),statusEl=document.getElementById('status');
+const msgs=['它看起来很开心！','小灵在发呆...','它好像饿了','摸摸头，它眯起了眼','它转了个圈！','它在想你今天过得怎么样'];
+
+// 8-bit style color palette
+const PAL={
+  body:'#7ec8e3',bodyDark:'#4a9cc4',eye:'#2d2d2d',mouth:'#ff6b8a',
+  cheek:'rgba(255,150,150,0.4)',ground:'#2a2a4a',star:'#ffd700',
+  grass1:'#3d6b4f',grass2:'#4a8a5f'
+};
+
+// Simple pixel pet drawing (scaled up)
+function drawPet(cx,cy,scale,frame){
+  const s=scale;
+  X.save();
+  X.translate(cx,cy+Math.sin(t*0.003)*4+petY);
+
+  // Shadow
+  X.fillStyle='rgba(0,0,0,0.15)';
+  X.beginPath();
+  X.ellipse(0,s*10,s*12,s*3,0,0,Math.PI*2);
+  X.fill();
+
+  // Body
+  const squish=petState==='happy'?1+Math.sin(t*0.01)*0.05:1;
+  X.scale(1,squish);
+
+  // Body blob
+  X.fillStyle=PAL.body;
+  X.beginPath();
+  X.ellipse(0,0,s*10,s*9,0,0,Math.PI*2);
+  X.fill();
+
+  // Belly
+  X.fillStyle='rgba(255,255,255,0.2)';
+  X.beginPath();
+  X.ellipse(0,s*2,s*6,s*5,0,0,Math.PI*2);
+  X.fill();
+
+  // Ears
+  const earBounce=petState==='happy'?Math.sin(t*0.008)*0.2:0;
+  X.fillStyle=PAL.body;
+  X.beginPath();
+  X.ellipse(-s*7,-s*8+Math.sin(t*0.005+earBounce)*s,s*4,s*5,-.3,0,Math.PI*2);
+  X.fill();
+  X.beginPath();
+  X.ellipse(s*7,-s*8+Math.sin(t*0.005+1+earBounce)*s,s*4,s*5,.3,0,Math.PI*2);
+  X.fill();
+  // Inner ears
+  X.fillStyle='rgba(255,150,180,0.4)';
+  X.beginPath();X.ellipse(-s*7,-s*7,s*2,s*3,-.3,0,Math.PI*2);X.fill();
+  X.beginPath();X.ellipse(s*7,-s*7,s*2,s*3,.3,0,Math.PI*2);X.fill();
+
+  // Eyes
+  const blink=Math.sin(t*0.002)>0.98;
+  if(blink||petState==='sleeping'){
+    X.strokeStyle=PAL.eye;X.lineWidth=s*0.8;X.lineCap='round';
+    X.beginPath();X.moveTo(-s*3.5,-s*2);X.lineTo(-s*1.5,-s*1);X.stroke();
+    X.beginPath();X.moveTo(s*1.5,-s*1);X.lineTo(s*3.5,-s*2);X.stroke();
+  } else if(petState==='happy'){
+    // Happy squint eyes
+    X.strokeStyle=PAL.eye;X.lineWidth=s*0.8;X.lineCap='round';
+    X.beginPath();X.arc(-s*2.5,-s*2,s*1.5,Math.PI*0.1,Math.PI*0.9);X.stroke();
+    X.beginPath();X.arc(s*2.5,-s*2,s*1.5,Math.PI*0.1,Math.PI*0.9);X.stroke();
+  } else {
+    X.fillStyle=PAL.eye;
+    X.beginPath();X.arc(-s*3,-s*2,s*1.5,0,Math.PI*2);X.fill();
+    X.beginPath();X.arc(s*3,-s*2,s*1.5,0,Math.PI*2);X.fill();
+    // Highlights
+    X.fillStyle='#fff';
+    X.beginPath();X.arc(-s*2.5,-s*2.5,s*0.5,0,Math.PI*2);X.fill();
+    X.beginPath();X.arc(s*3.5,-s*2.5,s*0.5,0,Math.PI*2);X.fill();
+  }
+
+  // Cheeks
+  X.fillStyle=PAL.cheek;
+  X.beginPath();X.ellipse(-s*6,s*0.5,s*2,s*1.2,0,0,Math.PI*2);X.fill();
+  X.beginPath();X.ellipse(s*6,s*0.5,s*2,s*1.2,0,0,Math.PI*2);X.fill();
+
+  // Mouth
+  X.strokeStyle=petState==='happy'?PAL.mouth:'rgba(100,80,80,0.5)';
+  X.lineWidth=s*0.6;X.lineCap='round';
+  X.beginPath();
+  if(petState==='happy'){
+    X.arc(0,s*1,s*2,0.1,Math.PI-0.1);
+  } else {
+    X.moveTo(-s*1.5,s*1.5);X.quadraticCurveTo(0,s*2,s*1.5,s*1.5);
+  }
+  X.stroke();
+
+  // Feet
+  X.fillStyle=PAL.bodyDark;
+  X.beginPath();X.ellipse(-s*5,s*8,s*3,s*2,0,0,Math.PI*2);X.fill();
+  X.beginPath();X.ellipse(s*5,s*8,s*3,s*2,0,0,Math.PI*2);X.fill();
+
+  X.restore();
+}
+
+// Hearts floating up
+function spawnHeart(x,y){hearts.push({x,y,vy:-1.5,life:1,sz:12+Math.random()*8})}
+// ZZZ for sleeping
+function spawnZ(x,y){zzz.push({x,y,vy:-0.5,vx:0.3,life:1,sz:14+Math.random()*6})}
+
+function drawHearts(){
+  hearts=hearts.filter(h=>{
+    h.y+=h.vy;h.life-=0.012;
+    X.save();X.translate(h.x,h.y);X.globalAlpha=h.life;
+    X.fillStyle='#ff6b8a';X.font=h.sz+'px serif';
+    X.fillText('♥',0,0);
+    X.restore();
+    return h.life>0;
+  });
+}
+function drawZzz(){
+  zzz=zzz.filter(z=>{
+    z.y+=z.vy;z.x+=z.vx;z.life-=0.008;
+    X.save();X.translate(z.x,z.y);X.globalAlpha=z.life*0.5;
+    X.fillStyle='rgba(200,200,255,0.8)';X.font=z.sz+'px monospace';
+    X.fillText('z',0,0);
+    X.restore();
+    return z.life>0;
+  });
+}
+
+// Stars background
+let stars=[];
+for(let i=0;i<40;i++)stars.push({x:Math.random(),y:Math.random()*0.5,sz:1+Math.random()*2,sp:0.5+Math.random()*2});
+
+function drawBg(){
+  const w=W(),h=H();
+  // Night sky gradient
+  const g=X.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'#0d0d2b');g.addColorStop(0.6,'#1a1a3e');g.addColorStop(1,'#2a2a4a');
+  X.fillStyle=g;X.fillRect(0,0,w,h);
+
+  // Stars
+  stars.forEach(s=>{
+    const twinkle=0.3+Math.sin(t*0.002*s.sp)*0.7;
+    X.fillStyle=`rgba(255,250,200,${twinkle*0.6})`;
+    X.beginPath();X.arc(s.x*w,s.y*h,s.sz,0,Math.PI*2);X.fill();
+  });
+
+  // Ground
+  X.fillStyle=PAL.ground;
+  X.fillRect(0,h*0.72,w,h*0.3);
+  // Grass tufts
+  for(let i=0;i<15;i++){
+    const gx=i/15*w+10;const gy=h*0.72;
+    X.strokeStyle=i%2?PAL.grass1:PAL.grass2;
+    X.lineWidth=2;X.lineCap='round';
+    X.beginPath();X.moveTo(gx,gy);X.quadraticCurveTo(gx-4+Math.sin(t*0.002+i)*2,gy-12,gx-3,gy-18);X.stroke();
+    X.beginPath();X.moveTo(gx+4,gy);X.quadraticCurveTo(gx+6+Math.sin(t*0.002+i+1)*2,gy-10,gx+8,gy-15);X.stroke();
+  }
+}
+
+// Pet tap area
+const petCX=()=>W()/2, petCY=()=>H()*0.58;
+C.addEventListener('pointerdown',e=>{
+  const dx=e.clientX-petCX(),dy=e.clientY-petCY();
+  if(Math.sqrt(dx*dx+dy*dy)<80){
+    petState='happy';stateTimer=3000;petY=-10;petTaps++;
+    for(let i=0;i<3;i++)spawnHeart(petCX()+dx+(Math.random()-0.5)*40,petCY()+dy-20);
+    if(petTaps<=1)msgEl.textContent='它好开心！再摸摸？';
+    else if(petTaps<=3)msgEl.textContent=msgs[Math.floor(Math.random()*msgs.length)];
+    else if(petTaps<=8)msgEl.textContent='你们已经是好朋友了';
+    else msgEl.textContent='小灵今天被摸了'+petTaps+'次，幸福感爆棚';
+    statusEl.textContent='超级开心！';
+  }
+});
+
+// Mood bar
+const moodbar=document.getElementById('moodbar');
+function updateMoodBar(){
+  moodbar.innerHTML='';
+  const moods=[{c:'#ff6b8a',w:35,l:'开心'},{c:'#7ec8e3',w:25,l:'平静'},{c:'#ffd700',w:20,l:'好奇'},{c:'#b8e6b8',w:20,l:'满足'}];
+  moods.forEach(m=>{
+    const d=document.createElement('div');
+    d.className='mood-seg';d.style.background=m.c;d.style.width=m.w+'%';d.style.opacity='0.6';
+    moodbar.appendChild(d);
+  });
+}
+updateMoodBar();
+
+let lastTs=0;
+function loop(ts){
+  if(!lastTs)lastTs=ts;
+  const dt=ts-lastTs;lastTs=ts;t=ts;
+
+  // State management
+  if(stateTimer>0){stateTimer-=dt;if(stateTimer<=0)petState='idle';}
+  petY+=(0-petY)*0.1;
+
+  // Sleeping at "night"
+  const hour=new Date().getHours();
+  if((hour>=23||hour<6)&&petState==='idle'){
+    petState='sleeping';
+    if(Math.random()<0.02)spawnZ(petCX()+30,petCY()-40);
+    statusEl.textContent='睡着了 zzz';
+    msgEl.textContent='嘘...它在做梦';
+  }
+
+  drawBg();
+  drawPet(petCX(),petCY(),4,Math.floor(t/200)%4);
+  drawHearts();
+  drawZzz();
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script></body></html>

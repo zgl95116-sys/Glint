@@ -9,3 +9,22 @@ android/app/build/
 # harness
 harness/logs/
 harness/screenshots/iter-*.png
+
+# build outputs
+glint-app/dist/
+glint-app/dist_new/
+
+# test / MCP artifacts
+.playwright-mcp/
+
+# precursor project, reference only (see CLAUDE.md)
+flash-lite-browser/
+
+# Word temp lock files
+.~*.docx
+~$*.docx
+
+# local visual experiments at repo root
+/test*.png
+/opt-test*.png
+/skeleton-dark.png

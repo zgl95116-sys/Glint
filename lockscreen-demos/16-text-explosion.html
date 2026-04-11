@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Glint — Text Explosion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background: #0a0a0a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            background: radial-gradient(ellipse at center, #1a1a1a 0%, #0a0a0a 100%);
+        }
+
+        .branding {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 2px;
+            font-weight: 600;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="branding">GLINT</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Responsive canvas setup
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Quotes to cycle through
+        const quotes = [
+            '今天也是全新的一天',
+            '保持好奇心',
+            '你比想象中更强大',
+            '慢慢来，比较快',
+            '此刻即是最好的时刻'
+        ];
+
+        // Particle class
+        class Particle {
+            constructor(char, x, y, targetX, targetY) {
+                this.char = char;
+                this.x = x;
+                this.y = y;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.vx = 0;
+                this.vy = 0;
+                this.rotation = 0;
+                this.rotationVelocity = 0;
+                this.scale = 1;
+                this.opacity = 1;
+                this.glowIntensity = 0;
+            }
+
+            update(state) {
+                if (state === 'exploding' || state === 'floating') {
+                    // Apply gravity
+                    this.vy += 0.3;
+
+                    // Apply air resistance
+                    this.vx *= 0.98;
+                    this.vy *= 0.98;
+
+                    // Update position
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Rotation during floating
+                    this.rotationVelocity *= 0.96;
+                    this.rotation += this.rotationVelocity;
+
+                    // Fade glow
+                    this.glowIntensity *= 0.95;
+                } else if (state === 'assembling') {
+                    // Spring physics toward target
+                    const dx = this.targetX - this.x;
+                    const dy = this.targetY - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 1) {
+                        this.x = this.targetX;
+                        this.y = this.targetY;
+                        this.vx = 0;
+                        this.vy = 0;
+                    } else {
+                        // Spring force
+                        const springStrength = 0.15;
+                        this.vx += dx * springStrength;
+                        this.vy += dy * springStrength;
+
+                        // Damping
+                        this.vx *= 0.85;
+                        this.vy *= 0.85;
+
+                        // Update position
+                        this.x += this.vx;
+                        this.y += this.vy;
+                    }
+
+                    // Smooth rotation back to zero
+                    this.rotation *= 0.9;
+                    this.rotationVelocity *= 0.9;
+
+                    // Fade in scale and opacity
+                    this.scale += (1 - this.scale) * 0.1;
+                    this.opacity += (1 - this.opacity) * 0.1;
+                } else if (state === 'assembled') {
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.rotation = 0;
+                    this.scale = 1;
+                    this.opacity = 1;
+                }
+            }
+
+            draw(ctx, fontSize) {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.scale(this.scale, this.scale);
+
+                // Glow effect during floating
+                if (this.glowIntensity > 0.1) {
+                    ctx.shadowColor = `rgba(100, 150, 255, ${this.glowIntensity * 0.6})`;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                }
+
+                ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.char, 0, 0);
+
+                ctx.restore();
+            }
+        }
+
+        // Animation state
+        let state = 'assembled';
+        let currentQuoteIndex = 0;
+        let currentQuote = quotes[currentQuoteIndex];
+        let particles = [];
+        let stateTimer = 0;
+        const fontSize = 48;
+        const stateDurations = {
+            assembled: 2000,
+            exploding: 300,
+            floating: 2000,
+            assembling: 1200
+        };
+
+        function createParticles() {
+            particles = [];
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            // Measure text to position characters correctly
+            ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+            const metrics = ctx.measureText(currentQuote);
+            const textWidth = metrics.width;
+
+            // Starting position (centered)
+            let x = centerX - textWidth / 2;
+            const y = centerY;
+
+            for (let i = 0; i < currentQuote.length; i++) {
+                const char = currentQuote[i];
+                const charMetrics = ctx.measureText(char);
+                const charWidth = charMetrics.width;
+                const charX = x + charWidth / 2;
+
+                particles.push(new Particle(char, charX, y, charX, y));
+                x += charWidth;
+            }
+        }
+
+        function explodeParticles() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            for (let particle of particles) {
+                // Random explosion velocity
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 4 + Math.random() * 8;
+                particle.vx = Math.cos(angle) * speed;
+                particle.vy = Math.sin(angle) * speed - 2; // Slight upward bias
+
+                // Random rotation
+                particle.rotationVelocity = (Math.random() - 0.5) * 0.3;
+
+                // Glow effect
+                particle.glowIntensity = 1;
+
+                // Scale slightly smaller during explosion
+                particle.scale = 0.9;
+            }
+        }
+
+        function updateState(deltaTime) {
+            stateTimer += deltaTime;
+
+            if (state === 'assembled' && stateTimer >= stateDurations.assembled) {
+                state = 'exploding';
+                stateTimer = 0;
+                explodeParticles();
+            } else if (state === 'exploding' && stateTimer >= stateDurations.exploding) {
+                state = 'floating';
+                stateTimer = 0;
+            } else if (state === 'floating' && stateTimer >= stateDurations.floating) {
+                state = 'assembling';
+                stateTimer = 0;
+                // Move to next quote
+                currentQuoteIndex = (currentQuoteIndex + 1) % quotes.length;
+                currentQuote = quotes[currentQuoteIndex];
+                createParticles();
+            } else if (state === 'assembling' && stateTimer >= stateDurations.assembling) {
+                state = 'assembled';
+                stateTimer = 0;
+            }
+        }
+
+        function update(deltaTime) {
+            updateState(deltaTime);
+
+            for (let particle of particles) {
+                particle.update(state);
+            }
+        }
+
+        function draw() {
+            // Clear canvas with dark gradient
+            const gradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, Math.hypot(canvas.width, canvas.height)
+            );
+            gradient.addColorStop(0, '#1a1a1a');
+            gradient.addColorStop(1, '#0a0a0a');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw particles
+            for (let particle of particles) {
+                particle.draw(ctx, fontSize);
+            }
+        }
+
+        // Touch handler for manual explosion
+        canvas.addEventListener('click', () => {
+            if (state === 'assembled') {
+                state = 'exploding';
+                stateTimer = 0;
+                explodeParticles();
+            }
+        });
+
+        // Animation loop
+        let lastTime = Date.now();
+        function animate() {
+            const currentTime = Date.now();
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            update(deltaTime);
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize
+        createParticles();
+        animate();
+    </script>
+</body>
+</html>

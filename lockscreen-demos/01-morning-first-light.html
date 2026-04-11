@@ -1,0 +1,211 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400;600&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box}
+
+  :root{
+    --warm:#ffb347;
+    --gold:#ffd700;
+    --amber:#ff8c00;
+    --cream:rgba(255,248,230,1);
+  }
+
+  body{
+    width:390px; height:844px;
+    overflow:hidden;
+    font-family:'Noto Serif SC','Georgia',serif;
+    background:#0f0a06;
+    position:relative;
+  }
+
+  /* === SUNRISE GRADIENT BAND === */
+  .sunrise{
+    position:absolute;
+    bottom:0; left:0; right:0;
+    height:55%;
+    background: linear-gradient(
+      to top,
+      #ff6b2b 0%,
+      #ff9a56 15%,
+      #ffd194 30%,
+      rgba(255,220,170,0.3) 50%,
+      transparent 100%
+    );
+    opacity:0;
+    animation: sunrise-rise 3s ease-out 0.5s forwards;
+  }
+  @keyframes sunrise-rise{
+    0%{opacity:0; transform:translateY(40%)}
+    100%{opacity:0.6; transform:translateY(0)}
+  }
+
+  /* === FLOATING LIGHT PARTICLES === */
+  .particle{
+    position:absolute;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(255,200,100,0.8),transparent 70%);
+    animation: float-particle linear infinite;
+    pointer-events:none;
+  }
+  @keyframes float-particle{
+    0%{transform:translateY(0) scale(1);opacity:0}
+    10%{opacity:1}
+    90%{opacity:1}
+    100%{transform:translateY(-120px) scale(0.3);opacity:0}
+  }
+
+  /* === WARM GLOW ORB (HERO) === */
+  .sun-orb{
+    position:absolute;
+    bottom:30%;
+    left:50%;
+    transform:translateX(-50%);
+    width:200px; height:200px;
+    border-radius:50%;
+    background: radial-gradient(circle at 40% 40%, #fff8e0, #ffd700 30%, #ff8c00 60%, transparent 75%);
+    filter:blur(60px);
+    opacity:0;
+    animation: orb-appear 2.5s ease-out 1s forwards, orb-breathe 5s ease-in-out 3.5s infinite;
+  }
+  @keyframes orb-appear{
+    0%{opacity:0;transform:translateX(-50%) scale(0.5)}
+    100%{opacity:0.7;transform:translateX(-50%) scale(1)}
+  }
+  @keyframes orb-breathe{
+    0%,100%{opacity:0.7;filter:blur(60px)}
+    50%{opacity:0.85;filter:blur(70px)}
+  }
+
+  /* === HORIZON LINE === */
+  .horizon{
+    position:absolute;
+    bottom:32%;
+    left:0;right:0;
+    height:2px;
+    background: linear-gradient(to right, transparent 5%, rgba(255,200,120,0.4) 30%, rgba(255,180,80,0.6) 50%, rgba(255,200,120,0.4) 70%, transparent 95%);
+    opacity:0;
+    animation: horizon-in 2s ease-out 2s forwards;
+  }
+  @keyframes horizon-in{
+    0%{opacity:0;transform:scaleX(0)}
+    100%{opacity:1;transform:scaleX(1)}
+  }
+
+  /* === GRAIN === */
+  .grain{
+    position:absolute;inset:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events:none;
+    opacity:0.5;
+  }
+
+  /* === CONTENT LAYER === */
+  .content{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;
+    padding:48px 28px 40px;
+    z-index:10;
+  }
+
+  /* === ANIMATIONS === */
+  @keyframes fade-up{
+    from{opacity:0;transform:translateY(24px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  @keyframes gentle-pulse{
+    0%,100%{opacity:0.6}
+    50%{opacity:1}
+  }
+  @keyframes temp-glow{
+    0%,100%{text-shadow:0 0 40px rgba(255,180,80,0.2)}
+    50%{text-shadow:0 0 80px rgba(255,180,80,0.4), 0 4px 60px rgba(255,100,20,0.2)}
+  }
+
+  .time-block{animation:fade-up 1s ease 1.5s both}
+  .hero-temp{animation:fade-up 1.2s ease 2s both}
+  .voice{animation:fade-up 1s ease 2.5s both}
+  .card{animation:fade-up 1s ease 3s both}
+  .footer{animation:fade-up 1s ease 3.4s both}
+</style>
+</head>
+<body>
+  <!-- Background layers -->
+  <div class="sunrise"></div>
+  <div class="sun-orb"></div>
+  <div class="horizon"></div>
+
+  <!-- Floating particles -->
+  <div class="particle" style="left:15%;bottom:35%;width:6px;height:6px;animation-duration:6s;animation-delay:2s"></div>
+  <div class="particle" style="left:40%;bottom:28%;width:4px;height:4px;animation-duration:8s;animation-delay:3s"></div>
+  <div class="particle" style="left:65%;bottom:38%;width:5px;height:5px;animation-duration:7s;animation-delay:2.5s"></div>
+  <div class="particle" style="left:80%;bottom:32%;width:3px;height:3px;animation-duration:9s;animation-delay:4s"></div>
+  <div class="particle" style="left:30%;bottom:40%;width:4px;height:4px;animation-duration:7.5s;animation-delay:3.5s"></div>
+
+  <div class="grain"></div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Time -->
+    <div class="time-block">
+      <div style="font-size:15px;color:rgba(255,220,170,0.55);letter-spacing:6px;font-weight:300">WEDNESDAY</div>
+      <div style="font-size:13px;color:rgba(255,200,140,0.4);margin-top:4px;letter-spacing:2px">四月九日 · 谷雨将至</div>
+    </div>
+
+    <!-- HERO: Giant temperature as the sunrise itself -->
+    <div class="hero-temp" style="text-align:center;margin-top:32px">
+      <div style="font-size:180px;font-weight:200;color:rgba(255,248,230,0.92);line-height:0.8;letter-spacing:-12px;animation:temp-glow 5s ease-in-out infinite">
+        7<span style="font-size:80px;vertical-align:super;letter-spacing:0">°</span>
+      </div>
+      <div style="font-size:42px;font-weight:200;color:rgba(255,200,130,0.88);margin-top:8px;letter-spacing:2px">
+        07:04
+      </div>
+      <div style="font-size:15px;color:rgba(255,220,170,0.5);margin-top:8px;letter-spacing:4px">
+        日出 05:48 · 多云转晴
+      </div>
+    </div>
+
+    <!-- AI Voice — intimate, warm -->
+    <div class="voice" style="margin-top:auto;margin-bottom:20px">
+      <div style="font-size:26px;font-weight:300;color:rgba(255,248,230,0.88);line-height:1.7;text-shadow:0 2px 20px rgba(0,0,0,0.3)">
+        太阳比你先醒了一小时。<br>
+        <span style="font-size:22px;color:rgba(255,220,170,0.7)">不过没关系，好事不怕晚。</span>
+      </div>
+    </div>
+
+    <!-- Info card -->
+    <div class="card">
+      <div style="background:rgba(0,0,0,0.35);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-radius:20px;padding:20px 22px;border:1px solid rgba(255,200,120,0.1)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <span style="font-size:13px;color:rgba(255,220,170,0.5);letter-spacing:3px">今日待办</span>
+          <span style="font-size:12px;color:rgba(255,180,80,0.6);animation:gentle-pulse 3s ease infinite">✦ 3 件事</span>
+        </div>
+        <div style="font-size:17px;color:rgba(255,248,230,0.85);line-height:1.8">
+          <div style="display:flex;justify-content:space-between">
+            <span>☕ 产品评审 · B3-会议室</span>
+            <span style="color:rgba(255,200,130,0.5);font-size:14px">10:00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:2px">
+            <span>📦 顺丰快递到丰巢</span>
+            <span style="color:rgba(255,200,130,0.5);font-size:14px">取件码</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:2px">
+            <span>🏃 傍晚5km · 空气优</span>
+            <span style="color:rgba(255,200,130,0.5);font-size:14px">18:30</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer" style="text-align:center;margin-top:16px">
+      <div style="font-size:11px;color:rgba(255,200,130,0.2);letter-spacing:8px">GLINT · FIRST LIGHT</div>
+    </div>
+  </div>
+</body>
+</html>

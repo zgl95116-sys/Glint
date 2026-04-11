@@ -170,12 +170,58 @@ const SHELL_HTML = `<!DOCTYPE html>
           styleEl.textContent = nextCss;
         }
 
-        // 2. Write new content to back buffer (on top but invisible)
-        //    overflow:hidden is placed AFTER bodyStyle to prevent AI-generated
-        //    styles from accidentally enabling overflow.
-        back.innerHTML = payload.html || '';
+        // 2. Prepare back buffer style BEFORE content so canvas/elements
+        //    have correct containing-block dimensions when scripts execute.
         back.style.cssText = 'position:absolute;inset:0;z-index:2;opacity:0;' + (payload.bodyStyle || '') + ';overflow:hidden;max-width:100vw;max-height:100vh;';
         back.className = payload.bodyClasses || '';
+
+        // 2b. Generation-gated rAF & setInterval — old prefab animation
+        //     loops self-terminate when __glintGen changes.
+        if (!window.__origRAF) {
+          window.__origRAF = requestAnimationFrame.bind(window);
+          window.__origSI  = setInterval.bind(window);
+          window.__origCI  = clearInterval.bind(window);
+        }
+        window.__glintGen = (window.__glintGen || 0) + 1;
+        const _gen = window.__glintGen;
+        window.requestAnimationFrame = function(fn) {
+          return window.__origRAF(function(t) {
+            if (window.__glintGen === _gen) fn(t);
+          });
+        };
+        window.setInterval = function(fn, ms) {
+          const id = window.__origSI(function() {
+            if (window.__glintGen !== _gen) { window.__origCI(id); return; }
+            fn();
+          }, ms);
+          return id;
+        };
+        document.querySelectorAll('script[data-glint-dyn]').forEach(s => s.remove());
+
+        // 2c. Inject content — createContextualFragment natively executes
+        //     <script> tags on appendChild (innerHTML does NOT execute them).
+        back.innerHTML = '';
+        const _html = payload.html || '';
+        if (_html) {
+          try {
+            const _r = document.createRange();
+            _r.selectNodeContents(back);
+            back.appendChild(_r.createContextualFragment(_html));
+          } catch(_e) {
+            back.innerHTML = _html;
+            const _codes = [];
+            back.querySelectorAll('script').forEach(old => {
+              _codes.push(old.textContent);
+              old.remove();
+            });
+            if (_codes.length) {
+              const _ns = document.createElement('script');
+              _ns.setAttribute('data-glint-dyn', '1');
+              _ns.textContent = _codes.join(';');
+              document.body.appendChild(_ns);
+            }
+          }
+        }
 
         // 3. Color scheme — only when changed
         const scheme = payload.colorScheme || 'dark';
