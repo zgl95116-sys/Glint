@@ -1,6 +1,7 @@
 import React, { startTransition, useState, useCallback, useRef } from 'react';
 import { HomeScreen } from './components/HomeScreen';
 import { LockScreen } from './components/LockScreen';
+import { MemoryDeckHandle } from './components/MemoryDeck';
 import { streamPageGeneration } from './services/geminiService';
 import type { PromptSource } from './services/geminiService';
 import { buildBridgeHtml } from './services/skeleton';
@@ -65,6 +66,7 @@ const App: React.FC = () => {
   const [revealPhase, setRevealPhase] = useState<'idle' | 'blurred' | 'revealing'>('idle');
   const [sandboxSessionKey, setSandboxSessionKey] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
+  const deckRef = useRef<MemoryDeckHandle>(null);
   const lastSandboxRuntimeRef = useRef<'stream' | 'prefab'>('stream');
 
   const handleGenerate = useCallback(async (prompt: string, promptSource: PromptSource, prefabHtml?: string) => {
@@ -259,11 +261,13 @@ const App: React.FC = () => {
     <div className="app-shell">
       <div className="app-layer app-layer-lock">
         <LockScreen
+          ref={deckRef}
           htmlContent={htmlContent}
           isLoading={isLoading}
           isActive={screen === 'lockscreen'}
           revealPhase={revealPhase}
           sandboxSessionKey={sandboxSessionKey}
+          highlightIds={[]}
           onBack={handleBack}
         />
       </div>

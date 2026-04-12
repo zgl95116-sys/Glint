@@ -9,6 +9,56 @@
     <link rel="stylesheet" href="/index.css">
     <style>
       body { margin: 0; overflow: hidden; background: #000; }
+
+      /* === MemoryDeck === */
+      .memory-deck {
+        position: absolute;
+        left: 4%;
+        top: 18%;
+        bottom: 18%;
+        width: 28vw;
+        max-width: 160px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        justify-content: center;
+        pointer-events: none;
+        z-index: 20;
+      }
+      .memory-card {
+        background: rgba(255, 255, 255, 0.06);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 8px 10px 10px;
+        opacity: 0.42;
+        transform: scale(0.96);
+        transition: opacity 400ms ease, transform 400ms ease, box-shadow 400ms ease;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .memory-card-lit {
+        opacity: 0.92;
+        transform: scale(1);
+        box-shadow: 0 4px 24px rgba(255, 220, 150, 0.18);
+      }
+      .memory-card-icon {
+        font-size: 14px;
+        line-height: 1;
+      }
+      .memory-card-label {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.45);
+        letter-spacing: 1px;
+      }
+      .memory-card-phrase {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.85);
+        line-height: 1.3;
+        font-weight: 300;
+      }
     </style>
   </head>
   <body>
