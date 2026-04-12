@@ -59,6 +59,37 @@
         line-height: 1.3;
         font-weight: 300;
       }
+
+      /* === Bottom sheet === */
+      .app-sheet {
+        position: absolute;
+        inset: 0;
+        z-index: 50;
+        background: rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        align-items: flex-end;
+        animation: sheet-fade 220ms ease both;
+      }
+      .app-sheet-panel {
+        width: 100%;
+        max-height: 80%;
+        background: rgba(20, 20, 24, 0.92);
+        border-top-left-radius: 24px;
+        border-top-right-radius: 24px;
+        padding: 24px 20px 32px;
+        overflow-y: auto;
+        animation: sheet-rise 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+      }
+      @keyframes sheet-fade {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes sheet-rise {
+        from { transform: translateY(60%); }
+        to { transform: translateY(0); }
+      }
     </style>
   </head>
   <body>

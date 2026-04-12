@@ -1,4 +1,4 @@
-import React, { startTransition, useState, useCallback, useRef } from 'react';
+import React, { startTransition, useState, useCallback, useRef, useEffect } from 'react';
 import { HomeScreen } from './components/HomeScreen';
 import { LockScreen } from './components/LockScreen';
 import { MemoryDeckHandle } from './components/MemoryDeck';
@@ -6,6 +6,7 @@ import { streamPageGeneration } from './services/geminiService';
 import type { PromptSource } from './services/geminiService';
 import { buildBridgeHtml } from './services/skeleton';
 import { resolveCards } from './constants/memory';
+import { PRESET_PROMPTS } from './constants/prompts';
 
 type Screen = 'home' | 'lockscreen';
 
@@ -61,7 +62,8 @@ function repairStreamingHtml(partial: string): string {
 }
 
 const App: React.FC = () => {
-  const [screen, setScreen] = useState<Screen>('home');
+  const [screen, setScreen] = useState<Screen>('lockscreen');
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [htmlContent, setHtmlContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [revealPhase, setRevealPhase] = useState<'idle' | 'blurred' | 'revealing'>('idle');
@@ -278,14 +280,29 @@ const App: React.FC = () => {
   }, []);
 
   const handleBack = useCallback(() => {
-    if (abortRef.current) {
-      abortRef.current.abort();
-      abortRef.current = null;
+    setSheetOpen(true);
+  }, []);
+
+  const didBootRef = useRef(false);
+  useEffect(() => {
+    if (didBootRef.current) return;
+    didBootRef.current = true;
+
+    const hour = new Date().getHours();
+    const pickLabel =
+      hour < 9 ? '07:00 · 枕边第一眼' :
+      hour < 12 ? '10:30 · 工作心流护航' :
+      hour < 14 ? '12:10 · 午间喘息' :
+      hour < 17 ? '15:00 · 下午提神' :
+      hour < 20 ? '18:30 · 日落交接' :
+      hour < 23 ? '19:30 · 今晚做点什么' :
+                  '23:00 · 今天的最后一页';
+
+    const ambient = PRESET_PROMPTS.find((p) => p.label === pickLabel);
+    if (ambient) {
+      handleGenerate(ambient.prompt, 'preset', ambient.prefabHtml, ambient.usedMemoryIds);
     }
-    setScreen('home');
-    setIsLoading(false);
-    setHtmlContent('');
-    setHighlightIds([]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -295,7 +312,7 @@ const App: React.FC = () => {
           ref={deckRef}
           htmlContent={htmlContent}
           isLoading={isLoading}
-          isActive={screen === 'lockscreen'}
+          isActive={true}
           revealPhase={revealPhase}
           sandboxSessionKey={sandboxSessionKey}
           highlightIds={highlightIds}
@@ -303,9 +320,16 @@ const App: React.FC = () => {
         />
       </div>
 
-      {screen === 'home' && (
-        <div className="app-layer app-layer-home">
-          <HomeScreen onGenerate={handleGenerate} />
+      {sheetOpen && (
+        <div className="app-sheet" onClick={() => setSheetOpen(false)}>
+          <div className="app-sheet-panel" onClick={(e) => e.stopPropagation()}>
+            <HomeScreen
+              onGenerate={(prompt, source, prefabHtml, usedMemoryIds) => {
+                setSheetOpen(false);
+                handleGenerate(prompt, source, prefabHtml, usedMemoryIds);
+              }}
+            />
+          </div>
         </div>
       )}
     </div>
