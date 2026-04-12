@@ -7,90 +7,176 @@
  */
 
 // ─────────────────────────────────────────────
-// 0. 开机首帧 — 电影感暗色锁屏（实时取时间）
+// 0. 开机首帧 — 粒子流场 + 触摸交互
 // ─────────────────────────────────────────────
 export const PREFAB_AMBIENT_BOOT = `<!doctype html>
 <html><head>
 <meta charset="utf-8">
 <meta name="color-scheme" content="dark">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{overflow:hidden;background:#080810;font-family:var(--font-display,-apple-system,"Helvetica Neue","PingFang SC",system-ui,sans-serif)}
-@keyframes b1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(25px,-45px) scale(1.12)}66%{transform:translate(-18px,22px) scale(.92)}}
-@keyframes b2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-35px,28px) scale(1.15)}66%{transform:translate(15px,-35px) scale(.9)}}
-@keyframes b3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20px,15px) scale(1.08)}}
-@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-@keyframes breathe{0%,100%{opacity:.4}50%{opacity:.7}}
-@keyframes sweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-.bg{position:absolute;inset:0;overflow:hidden;filter:blur(80px);opacity:.7}
-.b1{position:absolute;top:-10%;left:-5%;width:55vmin;height:55vmin;border-radius:50%;background:radial-gradient(circle,#c97832,#a04a2e 50%,transparent 70%);animation:b1 14s ease-in-out infinite}
-.b2{position:absolute;top:25%;left:45%;width:50vmin;height:50vmin;border-radius:50%;background:radial-gradient(circle,#4a3a8a,#2a1a5a 50%,transparent 70%);animation:b2 18s ease-in-out infinite}
-.b3{position:absolute;bottom:-5%;right:-10%;width:45vmin;height:45vmin;border-radius:50%;background:radial-gradient(circle,#1a4a6a,#0a2a4a 50%,transparent 70%);animation:b3 20s ease-in-out infinite}
-.ring{position:absolute;top:12%;right:10%;width:clamp(60px,18vmin,100px);height:clamp(60px,18vmin,100px);border-radius:50%;border:1px solid rgba(255,255,255,.06);animation:sweep 40s linear infinite}
-.ring::after{content:'';position:absolute;top:-2px;left:50%;width:4px;height:4px;border-radius:50%;background:rgba(255,200,150,.5)}
-.dot{position:absolute;border-radius:50%;background:rgba(255,255,255,.15);animation:breathe 4s ease-in-out infinite}
-.ct{position:absolute;inset:0;display:flex;flex-direction:column;padding:8% 8% 10%}
-.time{font-size:clamp(100px,36vw,240px);font-weight:100;color:rgba(255,255,255,.88);line-height:.85;letter-spacing:-6px;text-shadow:0 4px 40px rgba(200,120,50,.12);animation:rise 1.2s ease both}
-.day{font-size:15px;color:rgba(255,255,255,.35);letter-spacing:5px;margin-top:10px;animation:rise 1.2s ease .2s both}
-.voice{font-size:clamp(20px,5vw,26px);font-weight:300;color:rgba(255,255,255,.75);line-height:1.6;margin-top:auto;animation:rise 1.2s ease .5s both;max-width:80%}
-.card{background:rgba(255,255,255,.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:16px;padding:16px 18px;border:1px solid rgba(255,255,255,.08);margin-top:20px;flex-shrink:0;animation:rise 1.2s ease .7s both}
-.card-row{display:flex;justify-content:space-between;font-size:15px;color:rgba(255,255,255,.7);line-height:1.7}
-.card-dim{color:rgba(255,255,255,.3)}
-.brand{text-align:center;margin-top:14px;font-size:11px;color:rgba(255,255,255,.1);letter-spacing:6px;animation:rise 1.2s ease .9s both}
-.grain{position:absolute;inset:0;opacity:.025;pointer-events:none;filter:url(#gn)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
+body{overflow:hidden;background:#06060e;touch-action:none}
+canvas{position:absolute;inset:0}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:10% 8% 8%;pointer-events:none;z-index:10}
+.tm{font-size:clamp(90px,34vw,220px);font-weight:100;color:rgba(255,255,255,.85);line-height:.85;letter-spacing:-5px;font-family:var(--font-display,-apple-system,system-ui,sans-serif);text-shadow:0 0 80px rgba(var(--gr),var(--gg),var(--gb),.25)}
+.dt{font-size:14px;color:rgba(255,255,255,.3);letter-spacing:4px;margin-top:8px;font-family:var(--font-display,-apple-system,system-ui,sans-serif)}
+.bt{text-align:right}
+.vc{font-size:clamp(18px,4.5vw,24px);font-weight:300;color:rgba(255,255,255,.65);line-height:1.6;font-family:var(--font-display,-apple-system,system-ui,sans-serif);text-shadow:0 1px 12px rgba(0,0,0,.6)}
+.ht{font-size:12px;color:rgba(255,255,255,.15);letter-spacing:3px;text-align:center;margin-top:16px;font-family:var(--font-display,-apple-system,system-ui,sans-serif)}
 </style>
 </head><body>
-<svg style="position:absolute;width:0;height:0"><defs><filter id="gn"><feTurbulence baseFrequency=".65" numOctaves="4" stitchTiles="stitch"/></filter></defs></svg>
-<div class="bg"><div class="b1"></div><div class="b2"></div><div class="b3"></div></div>
-<div class="grain"></div>
-<div class="ring"></div>
-<div class="dot" style="top:20%;left:30%;width:2px;height:2px;animation-delay:0s"></div>
-<div class="dot" style="top:35%;left:65%;width:1.5px;height:1.5px;animation-delay:1.5s"></div>
-<div class="dot" style="top:55%;left:22%;width:1px;height:1px;animation-delay:3s"></div>
-<div class="ct">
-  <div class="time" id="t"></div>
-  <div class="day" id="d"></div>
-  <div class="voice" id="v"></div>
-  <div class="card">
-    <div class="card-row"><span id="c1"></span><span class="card-dim" id="c1r"></span></div>
-    <div class="card-row" style="margin-top:2px"><span id="c2"></span><span class="card-dim" id="c2r"></span></div>
+<canvas id="c"></canvas>
+<div class="ov">
+  <div>
+    <div class="tm" id="tm"></div>
+    <div class="dt" id="dt"></div>
   </div>
-  <div class="brand">GLINT · AMBIENT</div>
+  <div class="bt">
+    <div class="vc" id="vc"></div>
+    <div class="ht">触摸屏幕 · 搅动光流</div>
+  </div>
 </div>
 <script>
 (function(){
-  var now=new Date(),h=now.getHours(),m=String(now.getMinutes()).padStart(2,'0');
-  var days=['周日','周一','周二','周三','周四','周五','周六'];
-  var month=now.getMonth()+1,date=now.getDate();
-  document.getElementById('t').textContent=h+':'+m;
-  document.getElementById('d').textContent=month+'月'+date+'日 '+days[now.getDay()];
-  var voices=[
-    '夜还长，不着急。',
-    '新的一天，从容开始。',
-    '上午过半了，\\n一切都在轨道上。',
-    '午后的光线变软了，\\n歇一口气。',
-    '下午的时间，\\n慢慢用。',
-    '日落前最好的光，\\n留给自己。',
-    '晚上好，\\n今天辛苦了。',
-    '夜晚是自己的，\\n不用赶。'
-  ];
-  var vi=h<5?0:h<9?1:h<12?2:h<14?3:h<17?4:h<19?5:h<22?6:7;
-  document.getElementById('v').innerHTML=voices[vi].replace('\\\\n','<br>');
-  var cards=[
-    ['深夜的安静陪着你',''],
-    ['☀ 今天天气晴 22°C','适合出门'],
-    ['📅 下一个会 14:00','还有时间'],
-    ['☕ 午后一杯咖啡','充充电'],
-    ['📋 今日待办完成 3/7','继续'],
-    ['🌅 日落 18:42','值得看'],
-    ['📖 今天屏幕时间 4.2h','比昨天少'],
-    ['🌙 闹钟 7:00','还能睡一会']
-  ];
-  document.getElementById('c1').textContent=cards[vi][0];
-  document.getElementById('c1r').textContent=cards[vi][1];
-  var c2i=(vi+3)%8;
-  document.getElementById('c2').textContent=cards[c2i][0];
-  document.getElementById('c2r').textContent=cards[c2i][1];
+// ── Time & text ──
+var now=new Date(),h=now.getHours(),mi=String(now.getMinutes()).padStart(2,'0');
+var days=['周日','周一','周二','周三','周四','周五','周六'];
+document.getElementById('tm').textContent=h+':'+mi;
+document.getElementById('dt').textContent=(now.getMonth()+1)+'月'+now.getDate()+'日 '+days[now.getDay()];
+var voices=['夜深了，世界安静下来。','醒来了？今天会是好的一天。','专注的上午，你在发光。',
+'午后松一口气，阳光正好。','下午了，慢慢来。','日落的颜色，只属于此刻。',
+'晚上好，今天辛苦了。','夜晚是留给自己的。'];
+var vi=h<5?0:h<9?1:h<12?2:h<14?3:h<17?4:h<19?5:h<22?6:7;
+document.getElementById('vc').textContent=voices[vi];
+
+// ── Color palette by time of day ──
+var palettes=[
+  [[20,10,60],[80,40,120],[30,60,140]],       // 0-5 deep night: indigo/violet
+  [[180,100,40],[220,160,60],[140,60,30]],     // 5-9 morning: amber/gold
+  [[40,120,180],[60,80,160],[100,160,200]],    // 9-12 morning: sky blue
+  [[180,140,60],[200,120,80],[160,100,40]],    // 12-14 noon: warm gold
+  [[160,80,120],[120,60,160],[80,100,180]],    // 14-17 afternoon: mauve/purple
+  [[200,80,40],[180,60,80],[120,40,60]],       // 17-19 sunset: coral/red
+  [[60,40,120],[100,60,160],[40,80,140]],      // 19-22 evening: deep purple
+  [[15,8,50],[60,30,100],[20,50,120]]          // 22-24 late night: near-black violet
+];
+var pal=palettes[vi];
+// Set CSS vars for time glow
+document.documentElement.style.setProperty('--gr',pal[0][0]);
+document.documentElement.style.setProperty('--gg',pal[0][1]);
+document.documentElement.style.setProperty('--gb',pal[0][2]);
+
+// ── Simplex-ish noise (fast 2D) ──
+var perm=new Uint8Array(512);
+for(var i=0;i<256;i++)perm[i]=i;
+for(var i=255;i>0;i--){var j=Math.random()*i|0;var t=perm[i];perm[i]=perm[j];perm[j]=t;}
+for(var i=0;i<256;i++)perm[i+256]=perm[i];
+var G=[[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+function dot2(g,x,y){return g[0]*x+g[1]*y;}
+function noise2(x,y){
+  var F2=.5*(Math.sqrt(3)-1),G2=(3-Math.sqrt(3))/6;
+  var s=(x+y)*F2,i=Math.floor(x+s),j=Math.floor(y+s);
+  var t=(i+j)*G2,x0=x-(i-t),y0=y-(j-t);
+  var i1=x0>y0?1:0,j1=x0>y0?0:1;
+  var x1=x0-i1+G2,y1=y0-j1+G2,x2=x0-1+2*G2,y2=y0-1+2*G2;
+  var ii=i&255,jj=j&255;
+  var n0=0,n1=0,n2=0;
+  var t0=.5-x0*x0-y0*y0;if(t0>0){t0*=t0;var gi=perm[ii+perm[jj]]%8;n0=t0*t0*dot2(G[gi],x0,y0);}
+  var t1=.5-x1*x1-y1*y1;if(t1>0){t1*=t1;var gi=perm[ii+i1+perm[jj+j1]]%8;n1=t1*t1*dot2(G[gi],x1,y1);}
+  var t2=.5-x2*x2-y2*y2;if(t2>0){t2*=t2;var gi=perm[ii+1+perm[jj+1]]%8;n2=t2*t2*dot2(G[gi],x2,y2);}
+  return 70*(n0+n1+n2);
+}
+
+// ── Canvas setup ──
+var cv=document.getElementById('c'),cx=cv.getContext('2d');
+var W,H,dpr=Math.min(window.devicePixelRatio||1,2);
+function resize(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cx.scale(dpr,dpr);}
+resize();window.addEventListener('resize',resize);
+
+// ── Particles ──
+var N=280,ps=[];
+function mkP(){
+  return{x:Math.random()*W,y:Math.random()*H,
+    vx:0,vy:0,life:Math.random()*200+100,age:0,
+    ci:Math.random()*3|0,sz:Math.random()*1.5+.5};
+}
+for(var i=0;i<N;i++)ps.push(mkP());
+
+// ── Touch attractor ──
+var mx=-9999,my=-9999,mStr=0;
+function onT(e){
+  e.preventDefault();
+  var t=e.touches?e.touches[0]:e;
+  mx=t.clientX;my=t.clientY;mStr=180;
+}
+function onE(){mStr*=.92;if(mStr<1)mStr=0;}
+document.addEventListener('touchstart',onT,{passive:false});
+document.addEventListener('touchmove',onT,{passive:false});
+document.addEventListener('touchend',onE);
+document.addEventListener('mousedown',onT);
+document.addEventListener('mousemove',function(e){if(e.buttons)onT(e);});
+document.addEventListener('mouseup',onE);
+
+// ── Render loop ──
+var t0=performance.now(),frame=0;
+function draw(){
+  var elapsed=(performance.now()-t0)*.001;
+  // Fade trail
+  cx.globalCompositeOperation='source-over';
+  cx.fillStyle='rgba(6,6,14,.06)';
+  cx.fillRect(0,0,W,H);
+  cx.globalCompositeOperation='lighter';
+
+  var ns=.003,spd=.8;
+  for(var i=0;i<N;i++){
+    var p=ps[i];
+    // Noise-driven angle
+    var angle=noise2(p.x*ns+elapsed*.08,p.y*ns+elapsed*.06)*Math.PI*4;
+    p.vx+=(Math.cos(angle)*spd-p.vx)*.08;
+    p.vy+=(Math.sin(angle)*spd-p.vy)*.08;
+
+    // Touch attractor
+    if(mStr>1){
+      var dx=mx-p.x,dy=my-p.y,dist=Math.sqrt(dx*dx+dy*dy)+1;
+      if(dist<250){
+        var f=mStr/(dist*dist)*40;
+        // Swirl: perpendicular + inward
+        p.vx+=(-dy/dist*f*.7+dx/dist*f*.3);
+        p.vy+=(dx/dist*f*.7+dy/dist*f*.3);
+      }
+    }
+
+    p.x+=p.vx;p.y+=p.vy;
+    p.age++;
+    // Respawn
+    if(p.age>p.life||p.x<-20||p.x>W+20||p.y<-20||p.y>H+20){
+      var np=mkP();p.x=np.x;p.y=np.y;p.vx=0;p.vy=0;p.age=0;p.life=np.life;p.ci=np.ci;p.sz=np.sz;
+    }
+
+    // Alpha based on age (fade in/out)
+    var lifeRatio=p.age/p.life;
+    var alpha=lifeRatio<.1?lifeRatio*10:lifeRatio>.8?(1-lifeRatio)*5:1;
+    alpha*=.6;
+    var c=pal[p.ci];
+    cx.fillStyle='rgba('+c[0]+','+c[1]+','+c[2]+','+alpha+')';
+    cx.beginPath();
+    cx.arc(p.x,p.y,p.sz,0,Math.PI*2);
+    cx.fill();
+  }
+
+  // Occasional bright spark
+  if(frame%3===0){
+    var sp=ps[Math.random()*N|0];
+    if(sp.age>10){
+      var c=pal[sp.ci];
+      cx.fillStyle='rgba('+Math.min(c[0]+80,255)+','+Math.min(c[1]+80,255)+','+Math.min(c[2]+80,255)+',0.8)';
+      cx.beginPath();cx.arc(sp.x,sp.y,sp.sz+1,0,Math.PI*2);cx.fill();
+    }
+  }
+  frame++;
+  requestAnimationFrame(draw);
+}
+draw();
 })();
 </script>
 </body></html>`;
