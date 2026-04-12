@@ -82,6 +82,20 @@ const App: React.FC = () => {
       : [];
     setHighlightIds(litCards.map((c) => c.id));
 
+    // Fire-and-forget the fly-out animation in parallel with generation.
+    if (litCards.length > 0 && deckRef.current) {
+      const targetRect = new DOMRect(
+        window.innerWidth * 0.25,
+        window.innerHeight * 0.35,
+        window.innerWidth * 0.5,
+        window.innerHeight * 0.3,
+      );
+      void deckRef.current.flyPhrases(
+        litCards.map((c) => ({ cardId: c.id, text: c.phrase })),
+        targetRect,
+      );
+    }
+
     console.log('[DEBUG] handleGenerate called, prefabHtml:', typeof prefabHtml, prefabHtml ? 'HAS_CONTENT_len=' + prefabHtml.length : 'UNDEFINED', 'prompt:', prompt.slice(0, 30));
     if (abortRef.current) {
       abortRef.current.abort();

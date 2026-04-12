@@ -21,12 +21,56 @@ export const MemoryDeck = forwardRef<MemoryDeckHandle, MemoryDeckProps>(
   ({ cards, highlightIds }, ref) => {
     const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-    // Fly-out animation is implemented in Task 5. For now expose a stub
-    // with the full signature so the type contract compiles, but have it
-    // resolve immediately so consumers can already await it.
     useImperativeHandle(ref, () => ({
-      async flyPhrases(_phrases, _targetRect) {
-        // Implemented in Task 5.
+      async flyPhrases(phrases, targetRect) {
+        const animations = phrases.map(({ cardId, text }) => {
+          const cardEl = cardRefs.current.get(cardId);
+          if (!cardEl) return Promise.resolve();
+
+          const cardRect = cardEl.getBoundingClientRect();
+          const startX = cardRect.left + cardRect.width / 2;
+          const startY = cardRect.top + cardRect.height / 2;
+          const endX = targetRect.left + targetRect.width / 2;
+          const endY = targetRect.top + targetRect.height / 2;
+
+          const span = document.createElement('span');
+          span.textContent = text;
+          span.style.cssText = `
+            position: fixed;
+            left: ${startX}px;
+            top: ${startY}px;
+            transform: translate(-50%, -50%) scale(1);
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255, 240, 200, 0.95);
+            text-shadow: 0 2px 16px rgba(255, 220, 150, 0.6);
+            pointer-events: none;
+            z-index: 100;
+            white-space: nowrap;
+            font-family: var(--font-display, -apple-system, sans-serif);
+          `;
+          document.body.appendChild(span);
+
+          const dx = endX - startX;
+          const dy = endY - startY;
+
+          const anim = span.animate(
+            [
+              { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 },
+              { transform: 'translate(-50%, -50%) scale(1.15)', opacity: 1, offset: 0.15 },
+              { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.4)`, opacity: 1, offset: 0.75 },
+              { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.6)`, opacity: 0 },
+            ],
+            { duration: 700, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)', fill: 'forwards' },
+          );
+
+          return anim.finished.then(
+            () => span.remove(),
+            () => span.remove(),
+          );
+        });
+
+        await Promise.all(animations);
       },
     }));
 
