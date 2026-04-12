@@ -7,6 +7,96 @@
  */
 
 // ─────────────────────────────────────────────
+// 0. 开机首帧 — 电影感暗色锁屏（实时取时间）
+// ─────────────────────────────────────────────
+export const PREFAB_AMBIENT_BOOT = `<!doctype html>
+<html><head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="dark">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;background:#080810;font-family:var(--font-display,-apple-system,"Helvetica Neue","PingFang SC",system-ui,sans-serif)}
+@keyframes b1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(25px,-45px) scale(1.12)}66%{transform:translate(-18px,22px) scale(.92)}}
+@keyframes b2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-35px,28px) scale(1.15)}66%{transform:translate(15px,-35px) scale(.9)}}
+@keyframes b3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20px,15px) scale(1.08)}}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes breathe{0%,100%{opacity:.4}50%{opacity:.7}}
+@keyframes sweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.bg{position:absolute;inset:0;overflow:hidden;filter:blur(80px);opacity:.7}
+.b1{position:absolute;top:-10%;left:-5%;width:55vmin;height:55vmin;border-radius:50%;background:radial-gradient(circle,#c97832,#a04a2e 50%,transparent 70%);animation:b1 14s ease-in-out infinite}
+.b2{position:absolute;top:25%;left:45%;width:50vmin;height:50vmin;border-radius:50%;background:radial-gradient(circle,#4a3a8a,#2a1a5a 50%,transparent 70%);animation:b2 18s ease-in-out infinite}
+.b3{position:absolute;bottom:-5%;right:-10%;width:45vmin;height:45vmin;border-radius:50%;background:radial-gradient(circle,#1a4a6a,#0a2a4a 50%,transparent 70%);animation:b3 20s ease-in-out infinite}
+.ring{position:absolute;top:12%;right:10%;width:clamp(60px,18vmin,100px);height:clamp(60px,18vmin,100px);border-radius:50%;border:1px solid rgba(255,255,255,.06);animation:sweep 40s linear infinite}
+.ring::after{content:'';position:absolute;top:-2px;left:50%;width:4px;height:4px;border-radius:50%;background:rgba(255,200,150,.5)}
+.dot{position:absolute;border-radius:50%;background:rgba(255,255,255,.15);animation:breathe 4s ease-in-out infinite}
+.ct{position:absolute;inset:0;display:flex;flex-direction:column;padding:8% 8% 10%}
+.time{font-size:clamp(100px,36vw,240px);font-weight:100;color:rgba(255,255,255,.88);line-height:.85;letter-spacing:-6px;text-shadow:0 4px 40px rgba(200,120,50,.12);animation:rise 1.2s ease both}
+.day{font-size:15px;color:rgba(255,255,255,.35);letter-spacing:5px;margin-top:10px;animation:rise 1.2s ease .2s both}
+.voice{font-size:clamp(20px,5vw,26px);font-weight:300;color:rgba(255,255,255,.75);line-height:1.6;margin-top:auto;animation:rise 1.2s ease .5s both;max-width:80%}
+.card{background:rgba(255,255,255,.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:16px;padding:16px 18px;border:1px solid rgba(255,255,255,.08);margin-top:20px;flex-shrink:0;animation:rise 1.2s ease .7s both}
+.card-row{display:flex;justify-content:space-between;font-size:15px;color:rgba(255,255,255,.7);line-height:1.7}
+.card-dim{color:rgba(255,255,255,.3)}
+.brand{text-align:center;margin-top:14px;font-size:11px;color:rgba(255,255,255,.1);letter-spacing:6px;animation:rise 1.2s ease .9s both}
+.grain{position:absolute;inset:0;opacity:.025;pointer-events:none;filter:url(#gn)}
+</style>
+</head><body>
+<svg style="position:absolute;width:0;height:0"><defs><filter id="gn"><feTurbulence baseFrequency=".65" numOctaves="4" stitchTiles="stitch"/></filter></defs></svg>
+<div class="bg"><div class="b1"></div><div class="b2"></div><div class="b3"></div></div>
+<div class="grain"></div>
+<div class="ring"></div>
+<div class="dot" style="top:20%;left:30%;width:2px;height:2px;animation-delay:0s"></div>
+<div class="dot" style="top:35%;left:65%;width:1.5px;height:1.5px;animation-delay:1.5s"></div>
+<div class="dot" style="top:55%;left:22%;width:1px;height:1px;animation-delay:3s"></div>
+<div class="ct">
+  <div class="time" id="t"></div>
+  <div class="day" id="d"></div>
+  <div class="voice" id="v"></div>
+  <div class="card">
+    <div class="card-row"><span id="c1"></span><span class="card-dim" id="c1r"></span></div>
+    <div class="card-row" style="margin-top:2px"><span id="c2"></span><span class="card-dim" id="c2r"></span></div>
+  </div>
+  <div class="brand">GLINT · AMBIENT</div>
+</div>
+<script>
+(function(){
+  var now=new Date(),h=now.getHours(),m=String(now.getMinutes()).padStart(2,'0');
+  var days=['周日','周一','周二','周三','周四','周五','周六'];
+  var month=now.getMonth()+1,date=now.getDate();
+  document.getElementById('t').textContent=h+':'+m;
+  document.getElementById('d').textContent=month+'月'+date+'日 '+days[now.getDay()];
+  var voices=[
+    '夜还长，不着急。',
+    '新的一天，从容开始。',
+    '上午过半了，\\n一切都在轨道上。',
+    '午后的光线变软了，\\n歇一口气。',
+    '下午的时间，\\n慢慢用。',
+    '日落前最好的光，\\n留给自己。',
+    '晚上好，\\n今天辛苦了。',
+    '夜晚是自己的，\\n不用赶。'
+  ];
+  var vi=h<5?0:h<9?1:h<12?2:h<14?3:h<17?4:h<19?5:h<22?6:7;
+  document.getElementById('v').innerHTML=voices[vi].replace('\\\\n','<br>');
+  var cards=[
+    ['深夜的安静陪着你',''],
+    ['☀ 今天天气晴 22°C','适合出门'],
+    ['📅 下一个会 14:00','还有时间'],
+    ['☕ 午后一杯咖啡','充充电'],
+    ['📋 今日待办完成 3/7','继续'],
+    ['🌅 日落 18:42','值得看'],
+    ['📖 今天屏幕时间 4.2h','比昨天少'],
+    ['🌙 闹钟 7:00','还能睡一会']
+  ];
+  document.getElementById('c1').textContent=cards[vi][0];
+  document.getElementById('c1r').textContent=cards[vi][1];
+  var c2i=(vi+3)%8;
+  document.getElementById('c2').textContent=cards[c2i][0];
+  document.getElementById('c2r').textContent=cards[c2i][1];
+})();
+</script>
+</body></html>`;
+
+
+// ─────────────────────────────────────────────
 // 1. 戳泡泡解压
 // ─────────────────────────────────────────────
 export const PREFAB_BUBBLE_GAME = `<!doctype html>

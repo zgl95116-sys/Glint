@@ -75,7 +75,7 @@ export const MemoryDeck = forwardRef<MemoryDeckHandle, MemoryDeckProps>(
     }));
 
     return (
-      <div className="memory-deck" aria-hidden="true">
+      <div className={`memory-deck${highlightIds.length > 0 ? ' memory-deck-visible' : ''}`} aria-hidden="true">
         {cards.map((card) => {
           const isLit = highlightIds.includes(card.id);
           return (

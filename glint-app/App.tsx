@@ -8,6 +8,7 @@ import { buildBridgeHtml } from './services/skeleton';
 import { resolveCards } from './constants/memory';
 import { PRESET_PROMPTS } from './constants/prompts';
 import { FLIGHT_DELAY_DELTA_HTML } from './constants/flightDelta';
+import { PREFAB_AMBIENT_BOOT } from './constants/prefabs';
 
 type Screen = 'home' | 'lockscreen';
 
@@ -305,25 +306,12 @@ const App: React.FC = () => {
     setSheetOpen(true);
   }, []);
 
+  // Boot with a prefab — instant, guaranteed beautiful, no Gemini dependency.
   const didBootRef = useRef(false);
   useEffect(() => {
     if (didBootRef.current) return;
     didBootRef.current = true;
-
-    const hour = new Date().getHours();
-    const pickLabel =
-      hour < 9 ? '07:00 · 枕边第一眼' :
-      hour < 12 ? '10:30 · 工作心流护航' :
-      hour < 14 ? '12:10 · 午间喘息' :
-      hour < 17 ? '15:00 · 下午提神' :
-      hour < 20 ? '18:30 · 日落交接' :
-      hour < 23 ? '19:30 · 今晚做点什么' :
-                  '23:00 · 今天的最后一页';
-
-    const ambient = PRESET_PROMPTS.find((p) => p.label === pickLabel);
-    if (ambient) {
-      handleGenerate(ambient.prompt, 'preset', ambient.prefabHtml, ambient.usedMemoryIds);
-    }
+    handleGenerate('ambient boot', 'preset', PREFAB_AMBIENT_BOOT);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
