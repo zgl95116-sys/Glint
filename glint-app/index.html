@@ -10,63 +10,6 @@
     <style>
       body { margin: 0; overflow: hidden; background: #000; }
 
-      /* === MemoryDeck === */
-      .memory-deck {
-        position: absolute;
-        left: 2%;
-        top: 20%;
-        bottom: 20%;
-        width: 22vw;
-        max-width: 110px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        justify-content: center;
-        pointer-events: none;
-        z-index: 20;
-        opacity: 0;
-        transition: opacity 500ms ease;
-      }
-      .memory-deck.memory-deck-visible {
-        opacity: 1;
-      }
-      .memory-card {
-        background: rgba(0, 0, 0, 0.35);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 10px;
-        padding: 6px 8px 8px;
-        opacity: 0.35;
-        transform: scale(0.94);
-        transition: opacity 400ms ease, transform 400ms ease, box-shadow 400ms ease;
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-      }
-      .memory-card-lit {
-        opacity: 0.88;
-        transform: scale(1);
-        box-shadow: 0 4px 20px rgba(255, 220, 150, 0.22);
-        background: rgba(0, 0, 0, 0.5);
-      }
-      .memory-card-icon {
-        font-size: 12px;
-        line-height: 1;
-      }
-      .memory-card-label {
-        font-size: 9px;
-        color: rgba(255, 255, 255, 0.5);
-        letter-spacing: 1px;
-      }
-      .memory-card-phrase {
-        font-size: 11px;
-        color: rgba(255, 255, 255, 0.9);
-        line-height: 1.2;
-        font-weight: 300;
-        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-      }
-
       /* === Bottom sheet === */
       .app-sheet {
         position: absolute;

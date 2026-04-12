@@ -1,7 +1,5 @@
-import React, { forwardRef } from 'react';
+import React from 'react';
 import { Sandbox } from './Sandbox';
-import { MemoryDeck, type MemoryDeckHandle } from './MemoryDeck';
-import { MEMORY_DECK } from '../constants/memory';
 
 interface LockScreenProps {
   htmlContent: string;
@@ -9,7 +7,6 @@ interface LockScreenProps {
   isActive: boolean;
   revealPhase: 'idle' | 'blurred' | 'revealing';
   sandboxSessionKey: number;
-  highlightIds: string[];
   onBack: () => void;
 }
 
@@ -25,25 +22,26 @@ const FILTER_STYLES: Record<string, React.CSSProperties> = {
   },
 };
 
-export const LockScreen = forwardRef<MemoryDeckHandle, LockScreenProps>(
-  ({ htmlContent, isLoading, isActive, revealPhase, sandboxSessionKey, highlightIds, onBack }, deckRef) => {
-    return (
-      <div className={`lock-screen${isActive ? ' lock-screen-active' : ' lock-screen-idle'}`}>
-        <div className="lock-sandbox-wrap" style={FILTER_STYLES[revealPhase]}>
-          <Sandbox key={sandboxSessionKey} htmlContent={htmlContent} />
-        </div>
-
-        <MemoryDeck ref={deckRef} cards={MEMORY_DECK} highlightIds={highlightIds} />
-
-        {isActive && (
-          <div className="lock-back-pill" onClick={onBack}>
-            <span className="lock-back-brand">GLINT</span>
-            <span className="lock-back-hint">{isLoading ? '生成中...' : '选择场景'}</span>
-          </div>
-        )}
+export const LockScreen: React.FC<LockScreenProps> = ({
+  htmlContent,
+  isLoading,
+  isActive,
+  revealPhase,
+  sandboxSessionKey,
+  onBack,
+}) => {
+  return (
+    <div className={`lock-screen${isActive ? ' lock-screen-active' : ' lock-screen-idle'}`}>
+      <div className="lock-sandbox-wrap" style={FILTER_STYLES[revealPhase]}>
+        <Sandbox key={sandboxSessionKey} htmlContent={htmlContent} />
       </div>
-    );
-  },
-);
 
-LockScreen.displayName = 'LockScreen';
+      {isActive && (
+        <div className="lock-back-pill" onClick={onBack}>
+          <span className="lock-back-brand">GLINT</span>
+          <span className="lock-back-hint">{isLoading ? '生成中...' : '选择场景'}</span>
+        </div>
+      )}
+    </div>
+  );
+};

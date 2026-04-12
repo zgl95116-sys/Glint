@@ -1,15 +1,12 @@
 import React, { startTransition, useState, useCallback, useRef, useEffect } from 'react';
 import { HomeScreen } from './components/HomeScreen';
 import { LockScreen } from './components/LockScreen';
-import { MemoryDeckHandle } from './components/MemoryDeck';
 import { streamPageGeneration } from './services/geminiService';
 import type { PromptSource } from './services/geminiService';
 import { buildBridgeHtml } from './services/skeleton';
-import { resolveCards } from './constants/memory';
 import { PRESET_PROMPTS } from './constants/prompts';
 import { FLIGHT_DELAY_DELTA_HTML } from './constants/flightDelta';
 import { PREFAB_AMBIENT_BOOT } from './constants/prefabs';
-// backgrounds.ts is available for future use but not injected into prompts
 
 type Screen = 'home' | 'lockscreen';
 
@@ -26,13 +23,7 @@ function hasRenderableMarkup(html: string) {
   return /<body[^>]*>|<(main|section|div|article|img|svg|h1|h2|p|span)\b/i.test(html);
 }
 
-// Close unterminated tags so a mid-stream HTML fragment is renderable in the
-// sandbox. Sandbox.extractSandboxMessage() needs a closing </body> to pull body
-// content out; without this, partial streams either render nothing or fall
-// through the generic strip-path. This keeps first paint under ~500ms instead
-// of waiting for the full document.
 function repairStreamingHtml(partial: string): string {
-  // Drop a dangling partial tag at the tail (e.g. stream cut mid-`<di`).
   const lastLt = partial.lastIndexOf('<');
   const lastGt = partial.lastIndexOf('>');
   let s = lastLt > lastGt ? partial.slice(0, lastLt) : partial;
@@ -71,36 +62,14 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [revealPhase, setRevealPhase] = useState<'idle' | 'blurred' | 'revealing'>('idle');
   const [sandboxSessionKey, setSandboxSessionKey] = useState(0);
-  const [highlightIds, setHighlightIds] = useState<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
-  const deckRef = useRef<MemoryDeckHandle>(null);
   const lastSandboxRuntimeRef = useRef<'stream' | 'prefab'>('stream');
 
   const handleGenerate = useCallback(async (
     prompt: string,
     promptSource: PromptSource,
     prefabHtml?: string,
-    usedMemoryIds?: string[],
   ) => {
-    const litCards = usedMemoryIds && usedMemoryIds.length > 0 && !prefabHtml
-      ? resolveCards(usedMemoryIds)
-      : [];
-    setHighlightIds(litCards.map((c) => c.id));
-
-    // Fire-and-forget the fly-out animation in parallel with generation.
-    if (litCards.length > 0 && deckRef.current) {
-      const targetRect = new DOMRect(
-        window.innerWidth * 0.25,
-        window.innerHeight * 0.35,
-        window.innerWidth * 0.5,
-        window.innerHeight * 0.3,
-      );
-      void deckRef.current.flyPhrases(
-        litCards.map((c) => ({ cardId: c.id, text: c.phrase })),
-        targetRect,
-      );
-    }
-
     console.log('[DEBUG] handleGenerate called, prefabHtml:', typeof prefabHtml, prefabHtml ? 'HAS_CONTENT_len=' + prefabHtml.length : 'UNDEFINED', 'prompt:', prompt.slice(0, 30));
     if (abortRef.current) {
       abortRef.current.abort();
@@ -112,9 +81,6 @@ const App: React.FC = () => {
     const needsFreshSandbox =
       nextSandboxRuntime === 'prefab' || lastSandboxRuntimeRef.current === 'prefab';
 
-    // Script-heavy presets leave timers, rAF loops, and global bindings behind.
-    // Recreate the iframe only when entering/exiting that runtime class so
-    // normal stream->stream generations keep the existing low-latency path.
     if (needsFreshSandbox) {
       setSandboxSessionKey((current) => current + 1);
     }
@@ -125,7 +91,6 @@ const App: React.FC = () => {
     if (prefabHtml) {
       setIsLoading(true);
       setHtmlContent(buildBridgeHtml(prompt));
-      // Hold bridge briefly then crossfade to prefab content
       setTimeout(() => {
         if (controller.signal.aborted) return;
         setRevealPhase('blurred');
@@ -142,11 +107,6 @@ const App: React.FC = () => {
 
     // ── Standard Gemini streaming path ──
     setIsLoading(true);
-    // Paint an instant skeleton derived from the prompt (time + motif). The
-    // sandbox shows it within a frame; once the stream opens its own <body>
-    // with real content, commitHtml replaces it. Empty-body partial commits
-    // are filtered by Sandbox.extractSandboxMessage, so the skeleton is held
-    // until there is real content to show.
     setHtmlContent(buildBridgeHtml(prompt));
 
     // Scripted mid-stream reversal for the flight-delay preset.
@@ -158,7 +118,6 @@ const App: React.FC = () => {
         controller.abort();
         setRevealPhase('blurred');
         setHtmlContent(FLIGHT_DELAY_DELTA_HTML);
-        setHighlightIds(['flight_regular', 'hotel_preference']);
         setTimeout(() => {
           setRevealPhase('revealing');
           setTimeout(() => setRevealPhase('idle'), 700);
@@ -177,11 +136,11 @@ const App: React.FC = () => {
     let bodyFirstSeen = false;
     let bridgeActive = true;
     let fadeInProgress = false;
-    let pendingSwitch: string | null = null; // buffered HTML if content arrives before min bridge time
+    let pendingSwitch: string | null = null;
     let switchTimerSet = false;
 
     const BRIDGE_BODY_THRESHOLD = 150;
-    const BRIDGE_MIN_DURATION_MS = 1800; // let keyword animation play through
+    const BRIDGE_MIN_DURATION_MS = 1800;
 
     const doSwitch = (html: string) => {
       bridgeActive = false;
@@ -210,7 +169,6 @@ const App: React.FC = () => {
           const elapsed = performance.now() - genStartTime;
 
           if (elapsed < BRIDGE_MIN_DURATION_MS) {
-            // Content ready but bridge animation still playing — buffer it
             pendingSwitch = nextHtml;
             if (!switchTimerSet) {
               switchTimerSet = true;
@@ -226,14 +184,11 @@ const App: React.FC = () => {
           return;
         }
 
-        // Not enough content yet — keep bridge
         return;
       }
 
-      // Suppress commits during the brief crossfade
       if (fadeInProgress && !force) return;
 
-      // Throttled streaming commits — lower frequency to reduce animation resets
       if (!force) {
         if (!hasRenderableMarkup(nextHtml)) return;
         if (nextHtml.length - lastCommittedLen < STREAM_COMMIT_MIN_DELTA) {
@@ -253,13 +208,7 @@ const App: React.FC = () => {
     };
 
     try {
-      const memoryClause = litCards.length > 0
-        ? `\n\n[关于用户的记忆，请让这些事实自然地出现在画面里: ${litCards.map((c) => c.phrase).join('、')}]`
-        : '';
-
-      const augmentedPrompt = prompt + memoryClause;
-
-      const stream = streamPageGeneration(augmentedPrompt, promptSource, controller.signal);
+      const stream = streamPageGeneration(prompt, promptSource, controller.signal);
 
       for await (const chunk of stream) {
         if (controller.signal.aborted) {
@@ -268,7 +217,6 @@ const App: React.FC = () => {
         }
         fullHtml += chunk;
 
-        // First paint: commit as soon as <body> opens, even if below delta.
         const justOpenedBody = !bodyFirstSeen && /<body[^>]*>/i.test(fullHtml);
         if (justOpenedBody) {
           bodyFirstSeen = true;
@@ -276,8 +224,6 @@ const App: React.FC = () => {
           console.log(`[PERF] first_body_paint=${firstPaint.toFixed(0)}ms html_len=${fullHtml.length}`);
         }
 
-        // When bridge is active, don't force on body-open — let bridge
-        // stay until enough real content accumulates for a smooth crossfade.
         const shouldForceCommit =
           (justOpenedBody && !bridgeActive) ||
           /<\/body>|<\/html>/i.test(fullHtml) ||
@@ -322,13 +268,11 @@ const App: React.FC = () => {
     <div className="app-shell">
       <div className="app-layer app-layer-lock">
         <LockScreen
-          ref={deckRef}
           htmlContent={htmlContent}
           isLoading={isLoading}
           isActive={true}
           revealPhase={revealPhase}
           sandboxSessionKey={sandboxSessionKey}
-          highlightIds={highlightIds}
           onBack={handleBack}
         />
       </div>
@@ -337,9 +281,9 @@ const App: React.FC = () => {
         <div className="app-sheet" onClick={() => setSheetOpen(false)}>
           <div className="app-sheet-panel" onClick={(e) => e.stopPropagation()}>
             <HomeScreen
-              onGenerate={(prompt, source, prefabHtml, usedMemoryIds) => {
+              onGenerate={(prompt, source, prefabHtml) => {
                 setSheetOpen(false);
-                handleGenerate(prompt, source, prefabHtml, usedMemoryIds);
+                handleGenerate(prompt, source, prefabHtml);
               }}
             />
           </div>

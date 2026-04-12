@@ -17,12 +17,6 @@ export interface PresetPrompt {
    * 渲染管线会加一个短暂的 bridge→reveal 过渡来保持体验一致。
    */
   prefabHtml?: string;
-  /**
-   * 触发该 preset 时哪些 MemoryCard 会 "亮起并飞入"。
-   * 空 / 未设：不触发记忆卡动画，按原逻辑直出生成。
-   * Prefab preset：即使设置也会被忽略（预制 HTML 无法嵌入飞入短语）。
-   */
-  usedMemoryIds?: string[];
 }
 
 /**
@@ -54,7 +48,7 @@ export const PRESET_PROMPTS: PresetPrompt[] = [
 
 AI说：「张总昨晚说方案通过了。今天可以松口气。」`,
     dataBasis: '早晨6-9点44%未解锁。',
-    usedMemoryIds: ['sleep_late', 'coffee_morning'],
+
   },
 
   {
@@ -77,7 +71,7 @@ AI一句话：「没有需要你处理的事。继续。」
 
 极简，极安静。`,
     dataBasis: '9-12点57%未解锁全天最高。',
-    usedMemoryIds: ['review_week', 'weekly_report'],
+
   },
 
   {
@@ -148,7 +142,7 @@ AI说一句很轻的话：「今天做得不错。晚安。」
 
 除了月亮和这句话，画面上不要有任何其他元素。极简，极安静。`,
     dataBasis: '22-24点。51%未解锁。',
-    usedMemoryIds: ['music_river', 'gym_skipped'],
+
   },
 
   // ============================================================
@@ -177,7 +171,7 @@ AI说：「先回王磊那条就够了。」
 
 AI说：「差点乱了，但我替你算好了。」`,
     dataBasis: '出行变动是高焦虑高价值场景。',
-    usedMemoryIds: ['flight_regular', 'hotel_preference'],
+
   },
 
   {
@@ -215,7 +209,7 @@ AI说：「快到了。5分钟。」
 
 情绪：不是妈妈说的"赶紧睡"，也不是App弹的"您已使用手机30分钟"。是深夜值班的朋友，陪你安静待一会儿，不多话，但在。`,
     dataBasis: '凌晨0-6点57%解锁。Top App：豆包(22)、知乎(18)、B站(10)、米家(4)。汽水音乐活跃。这是和用户建立情感连接的独特窗口。',
-    usedMemoryIds: ['sleep_late', 'music_river'],
+
   },
 
   {
