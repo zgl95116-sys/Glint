@@ -38,7 +38,7 @@ export const LockScreen = forwardRef<MemoryDeckHandle, LockScreenProps>(
         {isActive && (
           <div className="lock-back-pill" onClick={onBack}>
             <span className="lock-back-brand">GLINT</span>
-            <span className="lock-back-hint">{isLoading ? '生成中...' : '点击返回'}</span>
+            <span className="lock-back-hint">{isLoading ? '生成中...' : '选择场景'}</span>
           </div>
         )}
       </div>
