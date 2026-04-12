@@ -7,7 +7,7 @@
  */
 
 // ─────────────────────────────────────────────
-// 0. 开机首帧 — 漂浮玻璃便签 + 点击翻转
+// 0. 开机首帧 — 氛围主视觉 + 三张重点卡片
 // ─────────────────────────────────────────────
 export const PREFAB_AMBIENT_BOOT = `<!doctype html>
 <html><head>
@@ -15,140 +15,374 @@ export const PREFAB_AMBIENT_BOOT = `<!doctype html>
 <meta name="color-scheme" content="dark">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
-body{overflow:hidden;background:#08051a;font-family:var(--font-display,-apple-system,"Helvetica Neue","PingFang SC",system-ui,sans-serif);touch-action:none}
+body{
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 22% 18%, rgba(86,110,255,.34), transparent 24%),
+    radial-gradient(circle at 78% 24%, rgba(74,227,214,.18), transparent 22%),
+    radial-gradient(circle at 52% 72%, rgba(165,94,255,.24), transparent 28%),
+    linear-gradient(180deg, #081026 0%, #0b1433 32%, #090f22 100%);
+  font-family:var(--font-display,-apple-system,"Helvetica Neue","PingFang SC",system-ui,sans-serif);
+  touch-action:none;
+}
 canvas{position:absolute;inset:0;z-index:0}
-.bg{position:absolute;inset:0;overflow:hidden;filter:blur(70px);opacity:1;z-index:1}
-.bg i{position:absolute;border-radius:50%}
-.bg i:nth-child(1){top:-20%;left:-15%;width:80vmin;height:80vmin;background:radial-gradient(circle,rgba(120,50,180,.8),rgba(80,20,140,.4) 50%,transparent 70%);animation:d1 14s ease-in-out infinite}
-.bg i:nth-child(2){bottom:0%;right:-20%;width:75vmin;height:75vmin;background:radial-gradient(circle,rgba(30,100,180,.7),rgba(20,60,140,.3) 50%,transparent 70%);animation:d2 18s ease-in-out infinite}
-.bg i:nth-child(3){top:35%;left:20%;width:60vmin;height:60vmin;background:radial-gradient(circle,rgba(180,60,100,.5),rgba(120,30,80,.2) 50%,transparent 70%);animation:d3 22s ease-in-out infinite}
-.bg i:nth-child(4){bottom:25%;left:50%;width:50vmin;height:50vmin;background:radial-gradient(circle,rgba(60,180,160,.4),rgba(30,120,100,.15) 50%,transparent 70%);animation:d1 26s ease-in-out infinite reverse}
-@keyframes d1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,30px) scale(1.15)}66%{transform:translate(-20px,-15px) scale(.9)}}
-@keyframes d2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-35px,-20px) scale(1.12)}66%{transform:translate(20px,35px) scale(.88)}}
-@keyframes d3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(25px,-25px) scale(1.18)}}
-.time-row{position:absolute;top:8%;left:7%;right:7%;z-index:20;pointer-events:none}
-.time-big{font-size:clamp(72px,28vw,180px);font-weight:100;color:rgba(255,255,255,.82);line-height:.9;letter-spacing:-4px}
-.time-sub{font-size:14px;color:rgba(255,255,255,.28);letter-spacing:4px;margin-top:6px}
-.cards{position:absolute;top:28%;bottom:12%;left:5%;right:5%;z-index:10}
-.card{position:absolute;width:clamp(140px,42vw,200px);border-radius:16px;padding:16px 14px 14px;cursor:pointer;perspective:600px;
-  background:rgba(255,255,255,.05);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border:1px solid rgba(255,255,255,.08);
-  transition:transform .6s cubic-bezier(.23,1,.32,1),box-shadow .6s ease,opacity .6s ease;
-  box-shadow:0 4px 30px rgba(0,0,0,.3)}
-.card:active{transform:scale(1.05)!important;box-shadow:0 8px 40px rgba(120,100,220,.25)!important}
-.card .front,.card .back{transition:opacity .4s ease}
-.card.flipped .front{opacity:0}
-.card.flipped .back{opacity:1}
-.card .back{opacity:0;position:absolute;inset:16px 14px 14px}
-.card-icon{font-size:20px;margin-bottom:6px}
-.card-text{font-size:14px;color:rgba(255,255,255,.8);line-height:1.5;font-weight:300}
-.card-hint{font-size:11px;color:rgba(255,255,255,.25);margin-top:8px;letter-spacing:1px}
-.back .card-text{color:rgba(200,180,255,.9)}
-.footer{position:absolute;bottom:6%;left:0;right:0;text-align:center;z-index:20;pointer-events:none}
-.footer-text{font-size:13px;color:rgba(255,255,255,.2);letter-spacing:2px}
-@keyframes float{0%,100%{transform:translateY(0px)}50%{transform:translateY(-10px)}}
+.aurora,.vignette,.grain,.shell{position:absolute;inset:0}
+.aurora{overflow:hidden;filter:blur(56px);opacity:.92;z-index:1}
+.aurora i{position:absolute;border-radius:999px;mix-blend-mode:screen}
+.aurora i:nth-child(1){top:-14%;left:-18%;width:72vmin;height:72vmin;background:radial-gradient(circle,rgba(124,89,255,.9),rgba(124,89,255,.12) 58%,transparent 72%);animation:driftA 18s ease-in-out infinite}
+.aurora i:nth-child(2){top:10%;right:-12%;width:62vmin;height:62vmin;background:radial-gradient(circle,rgba(87,203,255,.85),rgba(87,203,255,.1) 56%,transparent 74%);animation:driftB 22s ease-in-out infinite}
+.aurora i:nth-child(3){bottom:-10%;left:18%;width:76vmin;height:76vmin;background:radial-gradient(circle,rgba(255,101,171,.54),rgba(255,101,171,.08) 58%,transparent 76%);animation:driftC 24s ease-in-out infinite}
+.aurora i:nth-child(4){bottom:18%;right:6%;width:48vmin;height:48vmin;background:radial-gradient(circle,rgba(108,255,205,.35),rgba(108,255,205,.05) 58%,transparent 76%);animation:driftA 28s ease-in-out infinite reverse}
+.vignette{z-index:2;background:linear-gradient(180deg,rgba(3,6,18,.14),rgba(3,6,18,.02) 24%,rgba(3,6,18,.2) 100%)}
+.grain{z-index:3;opacity:.06;background-image:radial-gradient(rgba(255,255,255,.85) .5px, transparent .6px);background-size:8px 8px;mix-blend-mode:soft-light}
+.shell{
+  z-index:10;
+  padding:8% 7% 5%;
+  display:flex;
+  flex-direction:column;
+  color:#fff;
+  height:100vh;
+  overflow:hidden;
+}
+.meta{animation:rise .8s cubic-bezier(.16,1,.3,1) both}
+.eyebrow{font-size:12px;letter-spacing:4px;color:rgba(214,226,255,.42)}
+.date{margin-top:8px;font-size:15px;color:rgba(255,255,255,.68)}
+.hero{
+  position:relative;
+  margin-top:6%;
+  flex-shrink:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+}
+.halo{
+  position:absolute;
+  left:50%;
+  top:8%;
+  width:52vmin;
+  height:52vmin;
+  transform:translateX(-50%);
+  border-radius:50%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.18) 0%, rgba(161,191,255,.08) 28%, rgba(109,142,255,.02) 48%, transparent 66%);
+  box-shadow:0 0 120px rgba(91,131,255,.22), inset 0 0 100px rgba(255,255,255,.06);
+  animation:haloPulse 7s ease-in-out infinite;
+}
+.halo:after{
+  content:'';
+  position:absolute;
+  inset:8%;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.12);
+  animation:rotateSlow 16s linear infinite;
+}
+.hero-copy{
+  position:relative;
+  max-width:84%;
+  font-size:21px;
+  line-height:1.55;
+  color:rgba(241,246,255,.9);
+  text-shadow:0 4px 24px rgba(0,0,0,.3);
+  animation:rise .95s cubic-bezier(.16,1,.3,1) .08s both;
+}
+.hero-sub{
+  position:relative;
+  margin-top:10px;
+  font-size:14px;
+  color:rgba(217,226,255,.46);
+  letter-spacing:.6px;
+  animation:rise 1s cubic-bezier(.16,1,.3,1) .16s both;
+}
+.mode-tag{
+  position:relative;
+  margin-top:16px;
+  display:inline-block;
+  padding:7px 14px;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  font-size:12px;
+  color:rgba(236,242,255,.74);
+  letter-spacing:2px;
+  animation:rise 1s cubic-bezier(.16,1,.3,1) .24s both;
+}
+.deck{
+  margin-top:auto;
+  animation:rise 1.05s cubic-bezier(.16,1,.3,1) .32s both;
+}
+.deck-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+.deck-title{
+  font-size:14px;
+  color:rgba(255,255,255,.58);
+  letter-spacing:2px;
+}
+.deck-note{
+  font-size:12px;
+  color:rgba(255,255,255,.3);
+}
+.cards{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.card{
+  position:relative;
+  min-height:72px;
+  padding:14px 16px 13px;
+  border-radius:22px;
+  overflow:hidden;
+  cursor:pointer;
+  background:linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.05));
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 14px 40px rgba(0,0,0,.22);
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+  transform:translateY(var(--offsetY)) rotate(var(--tilt));
+  transition:transform .55s cubic-bezier(.16,1,.3,1), box-shadow .55s ease, border-color .4s ease;
+}
+.card:before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(120deg, transparent 18%, rgba(255,255,255,.16) 50%, transparent 82%);
+  transform:translateX(-130%);
+  transition:transform .9s ease;
+}
+.card:active{transform:translateY(calc(var(--offsetY) - 2px)) rotate(var(--tilt)) scale(.99)}
+.card.selected{
+  transform:translateY(calc(var(--offsetY) - 7px)) rotate(0deg) scale(1.01);
+  border-color:rgba(184,209,255,.28);
+  box-shadow:0 20px 56px rgba(6,10,22,.34), 0 0 0 1px rgba(255,255,255,.03) inset;
+}
+.card.selected:before{transform:translateX(130%)}
+.front,.back{position:relative;transition:opacity .34s ease, transform .44s ease}
+.back{
+  position:absolute;
+  inset:16px;
+  opacity:0;
+  transform:translateY(8px);
+}
+.card.selected .front{opacity:0;transform:translateY(-8px)}
+.card.selected .back{opacity:1;transform:translateY(0)}
+.card-top{display:flex;align-items:center;gap:10px}
+.card-icon{
+  width:34px;
+  height:34px;
+  border-radius:11px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.11);
+  font-size:17px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.card-label{font-size:12px;letter-spacing:2px;color:rgba(235,241,255,.44)}
+.card-title{margin-top:10px;font-size:19px;color:rgba(248,250,255,.95);line-height:1.28}
+.card-meta{margin-top:7px;font-size:13px;color:rgba(227,234,255,.42)}
+.card-body{font-size:16px;line-height:1.55;color:rgba(244,248,255,.94)}
+.card-hint{margin-top:8px;font-size:12px;color:rgba(227,234,255,.34)}
+.footer{
+  margin-top:12px;
+  flex-shrink:0;
+  text-align:center;
+  font-size:12px;
+  color:rgba(255,255,255,.26);
+  letter-spacing:2px;
+  animation:rise 1.1s cubic-bezier(.16,1,.3,1) .42s both;
+}
+@keyframes driftA{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(26px,22px,0) scale(1.12)}}
+@keyframes driftB{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(-34px,18px,0) scale(.9)}}
+@keyframes driftC{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(18px,-26px,0) scale(1.08)}}
+@keyframes haloPulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.88}50%{transform:translateX(-50%) scale(1.05);opacity:1}}
+@keyframes rotateSlow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head><body>
 <canvas id="cv"></canvas>
-<div class="bg"><i></i><i></i><i></i><i></i></div>
-<div class="time-row"><div class="time-big" id="tm"></div><div class="time-sub" id="dt"></div></div>
-<div class="cards" id="cards"></div>
-<div class="footer"><div class="footer-text">点一张卡片 · 看看背面写了什么</div></div>
+<div class="aurora"><i></i><i></i><i></i><i></i></div>
+<div class="vignette"></div>
+<div class="grain"></div>
+<div class="shell">
+  <div class="meta">
+    <div class="eyebrow" id="eyebrow"></div>
+    <div class="date" id="dt"></div>
+  </div>
+  <div class="hero">
+    <div class="halo"></div>
+    <div class="hero-copy" id="heroCopy"></div>
+    <div class="hero-sub" id="heroSub"></div>
+    <div class="mode-tag" id="modeTag"></div>
+  </div>
+  <div class="deck">
+    <div class="deck-head">
+      <div class="deck-title">此刻先看这三件事</div>
+      <div class="deck-note">点开一张就够了</div>
+    </div>
+    <div class="cards" id="cards"></div>
+  </div>
+  <div class="footer">GLINT 会先替你把这一刻整理出一个轮廓</div>
+</div>
 <script>
 (function(){
-// ── Particle starfield background ──
 var cv=document.getElementById('cv'),cx=cv.getContext('2d');
 var W,H,dpr=Math.min(window.devicePixelRatio||1,2);
 function rsz(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0);}
 rsz();
+
 var stars=[];
-for(var i=0;i<100;i++){
-  stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2+.4,
-    dx:(Math.random()-.5)*.15,dy:Math.random()*.1+.02,
-    phase:Math.random()*Math.PI*2,speed:Math.random()*.8+.4,
-    hue:Math.random()>.7?'220,200,255':'180,160,240'});
+for(var i=0;i<90;i++){
+  stars.push({
+    x:Math.random()*W,
+    y:Math.random()*H,
+    r:Math.random()*1.6+.4,
+    speed:Math.random()*.35+.08,
+    drift:(Math.random()-.5)*.18,
+    phase:Math.random()*Math.PI*2
+  });
 }
-function drawStars(){
+function draw(){
   cx.clearRect(0,0,W,H);
   var t=performance.now()*.001;
   for(var i=0;i<stars.length;i++){
     var s=stars[i];
-    s.x+=s.dx;s.y+=s.dy;
-    if(s.y>H+10){s.y=-10;s.x=Math.random()*W;}
-    if(s.x<-10)s.x=W+10;if(s.x>W+10)s.x=-10;
-    var twinkle=.4+Math.sin(t*s.speed+s.phase)*.4;
-    cx.globalAlpha=twinkle;
-    cx.fillStyle='rgba('+s.hue+',1)';
+    s.y+=s.speed;
+    s.x+=Math.sin(t*.3+s.phase)*s.drift;
+    if(s.y>H+14){s.y=-14;s.x=Math.random()*W;}
+    if(s.x<-20)s.x=W+20;
+    if(s.x>W+20)s.x=-20;
+    var tw=.28+Math.sin(t*1.6+s.phase)*.18;
+    cx.globalAlpha=tw;
+    cx.fillStyle='rgba(231,240,255,1)';
     cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fill();
-    if(s.r>1.2){
-      cx.globalAlpha=twinkle*.2;
-      cx.beginPath();cx.arc(s.x,s.y,s.r*5,0,Math.PI*2);cx.fill();
+    if(s.r>1.1){
+      cx.globalAlpha=tw*.18;
+      cx.beginPath();cx.arc(s.x,s.y,s.r*5.4,0,Math.PI*2);cx.fill();
     }
   }
   cx.globalAlpha=1;
-  requestAnimationFrame(drawStars);
+  cx.strokeStyle='rgba(120,155,255,.12)';
+  cx.lineWidth=1;
+  cx.beginPath();
+  cx.moveTo(W*.08, H*.7);
+  cx.bezierCurveTo(W*.24, H*.62, W*.4, H*.82, W*.56, H*.72);
+  cx.bezierCurveTo(W*.68, H*.64, W*.82, H*.68, W*.92, H*.62);
+  cx.stroke();
+  requestAnimationFrame(draw);
 }
-drawStars();
+draw();
 
-// ── Time & cards ──
-var now=new Date(),h=now.getHours(),mi=String(now.getMinutes()).padStart(2,'0');
+var now=new Date();
+var hour=now.getHours();
+var mins=String(now.getMinutes()).padStart(2,'0');
 var days=['周日','周一','周二','周三','周四','周五','周六'];
-document.getElementById('tm').textContent=h+':'+mi;
+var profiles=[
+  {
+    range:[5,11],
+    eyebrow:'FIRST LIGHT',
+    hero:'别急着把今天一下子活完。',
+    sub:'先让重要的那件事浮起来，其他的等会儿再说。',
+    tag:'MORNING MODE',
+    cards:[
+      {icon:'☀️',label:'天气',title:'22°C · 晴',meta:'现在出门会很舒服',back:'下班前还有一段完整的好天气。<br>如果想散步，今天值得。'},
+      {icon:'📋',label:'工作',title:'10:00 产品评审',meta:'今天最先需要定下来的事',back:'先把开头那一句想清楚。<br>后面的节奏会跟着顺。'},
+      {icon:'🌙',label:'自己',title:'昨晚 11:47 才睡',meta:'比前天早了 20 分钟',back:'你已经在慢慢调整回来。<br>今天不需要对自己太狠。'}
+    ]
+  },
+  {
+    range:[11,18],
+    eyebrow:'IN FLOW',
+    hero:'你不用一次回应整个世界。',
+    sub:'此刻只要抓住一个重心，剩下的噪音先放在身后。',
+    tag:'DAY MODE',
+    cards:[
+      {icon:'💬',label:'消息',title:'有 2 条未读消息',meta:'都不是立刻要命的事',back:'重要的人会再来找你。<br>先别把注意力切碎。'},
+      {icon:'📌',label:'进度',title:'待办还剩 3 件',meta:'最重的已经过去一半',back:'别盯着“三件”。<br>先做那一件最想逃的，就会轻很多。'},
+      {icon:'🎧',label:'间隙',title:'B 站更新了你会点开的内容',meta:'困的时候可以借它醒一下',back:'如果真累了，就放空 8 分钟。<br>回来继续，也来得及。'}
+    ]
+  },
+  {
+    range:[18,24],
+    eyebrow:'AFTER HOURS',
+    hero:'工作已经留在身后，生活该往前一点。',
+    sub:'别再把今晚做成待办清单，让它先有一点呼吸感。',
+    tag:'EVENING MODE',
+    cards:[
+      {icon:'🌆',label:'空气',title:'外面 19°C · 微风',meta:'今晚适合往外走一段',back:'不用去很远。<br>只要离开屏幕十五分钟，脑子就会安静下来。'},
+      {icon:'🎫',label:'期待',title:'演出预售就在这周',meta:'你已经等这场很久了',back:'值得期待的事要留在眼前。<br>不是所有兴奋都要被效率让路。'},
+      {icon:'🍜',label:'生活',title:'晚饭还没决定',meta:'这不是一个需要 KPI 的问题',back:'随便吃也没关系。<br>今晚先让自己舒服一点。'}
+    ]
+  },
+  {
+    range:[0,5],
+    eyebrow:'SOFT HOURS',
+    hero:'现在不是解决问题的时刻。',
+    sub:'如果你只是醒了一下，就让屏幕轻一点，别把自己叫醒。',
+    tag:'QUIET MODE',
+    cards:[
+      {icon:'🌘',label:'睡意',title:'已经很晚了',meta:'别把夜里活成白天',back:'看完这一眼就够了。<br>剩下的，留给明天醒着的你。'},
+      {icon:'🎵',label:'陪伴',title:'昨晚听的歌停在 03:30',meta:'那首歌还在这里',back:'如果想继续放，也别太久。<br>让旋律替你收尾，不要让信息继续涌进来。'},
+      {icon:'🫧',label:'心事',title:'脑子还在转',meta:'但现在不需要得出答案',back:'有些念头只是路过。<br>别追它，等天亮再说。'}
+    ]
+  }
+];
+
+function pickProfile(h){
+  for(var i=0;i<profiles.length;i++){
+    var p=profiles[i];
+    if(h>=p.range[0]&&h<p.range[1]) return p;
+  }
+  return profiles[0];
+}
+
+var profile=pickProfile(hour);
+document.getElementById('eyebrow').textContent=profile.eyebrow;
+document.getElementById('heroCopy').textContent=profile.hero;
+document.getElementById('heroSub').textContent=profile.sub;
+document.getElementById('modeTag').textContent=profile.tag;
 document.getElementById('dt').textContent=(now.getMonth()+1)+'月'+now.getDate()+'日 '+days[now.getDay()];
 
-// Card data: [icon, front text, back text]
-var data=[
-  ['💭','今天有什么想做的？','不想做也没关系，\\n发呆也是一种充电。'],
-  ['☀️','外面 22°C · 晴','适合出门走走，\\n阳光在 18:30 落下。'],
-  ['📋','待办还剩 3 件','最重要的那件，\\n你心里已经知道是哪个。'],
-  ['🎵','昨晚听着歌睡着了','《河流》播到 3:30 暂停，\\n要不要继续？'],
-  ['✉️','有 2 条消息没看','都不急。\\n重要的人会打电话。'],
-  ['🌙','昨晚 11:47 才睡','比前天早了 20 分钟，\\n在变好。']
-];
-// Shuffle based on time so each boot feels different
-var seed=h*60+now.getMinutes();
-data.sort(function(a,b){return Math.sin(seed*a[0].charCodeAt(0))-Math.sin(seed*b[0].charCodeAt(0));});
-
-var container=document.getElementById('cards');
-var positions=[
-  {top:'0%',left:'2%'},{top:'5%',right:'0%'},
-  {top:'32%',left:'8%'},{top:'38%',right:'5%'},
-  {top:'64%',left:'0%'},{top:'68%',right:'8%'}
-];
-var durations=[6,7,5.5,8,6.5,7.5];
-
-data.forEach(function(d,i){
+var cardsEl=document.getElementById('cards');
+var selectedTimer=null;
+profile.cards.forEach(function(cardData,i){
   var card=document.createElement('div');
   card.className='card';
-  var pos=positions[i];
-  if(pos.left!==undefined)card.style.left=pos.left;
-  if(pos.right!==undefined)card.style.right=pos.right;
-  card.style.top=pos.top;
-  card.style.animation='float '+durations[i]+'s ease-in-out '+(i*0.8)+'s infinite';
-
-  var backText=d[2].replace(/\\\\n/g,'<br>');
-
-  card.innerHTML='<div class="front">'
-    +'<div class="card-icon">'+d[0]+'</div>'
-    +'<div class="card-text">'+d[1]+'</div>'
-    +'<div class="card-hint">点击翻转</div>'
-    +'</div>'
-    +'<div class="back">'
-    +'<div class="card-icon">✦</div>'
-    +'<div class="card-text">'+backText+'</div>'
-    +'</div>';
+  card.style.setProperty('--offsetY',(i===0?0:i===1?2:5)+'px');
+  card.style.setProperty('--tilt',(i===0?'-1.2deg':i===1?'1deg':'-0.6deg'));
+  card.innerHTML=
+    '<div class="front">'
+    + '<div class="card-top"><div class="card-icon">'+cardData.icon+'</div><div class="card-label">'+cardData.label+'</div></div>'
+    + '<div class="card-title">'+cardData.title+'</div>'
+    + '<div class="card-meta">'+cardData.meta+'</div>'
+    + '<div class="card-hint">点开看看背面</div>'
+    + '</div>'
+    + '<div class="back">'
+    + '<div class="card-top"><div class="card-icon">✦</div><div class="card-label">'+cardData.label+'</div></div>'
+    + '<div class="card-body">'+cardData.back+'</div>'
+    + '</div>';
 
   card.addEventListener('click',function(e){
     e.stopPropagation();
-    card.classList.toggle('flipped');
-    // Auto flip back after 4s
-    if(card.classList.contains('flipped')){
-      setTimeout(function(){card.classList.remove('flipped');},4000);
+    var cards=cardsEl.querySelectorAll('.card');
+    for(var j=0;j<cards.length;j++){
+      if(cards[j]!==card) cards[j].classList.remove('selected');
+    }
+    card.classList.toggle('selected');
+    if(selectedTimer) clearTimeout(selectedTimer);
+    if(card.classList.contains('selected')){
+      selectedTimer=setTimeout(function(){card.classList.remove('selected');},4200);
     }
   });
-
-  container.appendChild(card);
+  cardsEl.appendChild(card);
 });
+
+window.addEventListener('resize',rsz);
 })();
 </script>
 </body></html>`;
@@ -939,13 +1173,17 @@ export const PREFAB_SOUND_WAVE = `<!DOCTYPE html>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Responsive canvas
+        // Responsive canvas (DPR-aware for mobile)
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
         resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('resize', function() { dpr = Math.min(window.devicePixelRatio || 1, 2); resizeCanvas(); });
 
         // === Configuration ===
         const CONFIG = {
@@ -959,10 +1197,12 @@ export const PREFAB_SOUND_WAVE = `<!DOCTYPE html>
         };
 
         function updateDimensions() {
-            CONFIG.centerX = canvas.width / 2;
-            CONFIG.centerY = canvas.height / 2;
-            CONFIG.baseRadius = Math.min(canvas.width, canvas.height) * 0.2;
-            CONFIG.barMaxLength = Math.min(canvas.width, canvas.height) * 0.25;
+            var w = window.innerWidth;
+            var h = window.innerHeight;
+            CONFIG.centerX = w / 2;
+            CONFIG.centerY = h / 2;
+            CONFIG.baseRadius = Math.min(w, h) * 0.2;
+            CONFIG.barMaxLength = Math.min(w, h) * 0.25;
             CONFIG.particleBaseRadius = CONFIG.baseRadius + CONFIG.barMaxLength * 0.6;
         }
         updateDimensions();
@@ -1598,10 +1838,16 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Responsive canvas
+        // Helper functions for CSS dimensions
+        function W() { return window.innerWidth; }
+        function H() { return window.innerHeight; }
+
+        // Responsive canvas with DPR scaling
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = W() * dpr;
+            canvas.height = H() * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
@@ -1615,7 +1861,7 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
             { line: '我祈祷拥有一颗透明的心灵', tiles: ['我祈祷', '拥有', '一颗', '透明的', '心灵'] }
         ];
 
-        const allLyrics = lyrics.map(l => l.line).join('\n');
+        const allLyrics = lyrics.map(l => l.line).join('\\n');
 
         // Pastel/gradient colors for tiles
         const colors = [
@@ -1639,8 +1885,8 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
         // Floating particle class
         class FloatingNote {
             constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = canvas.height + 50;
+                this.x = Math.random() * W();
+                this.y = H() + 50;
                 this.vx = (Math.random() - 0.5) * 1;
                 this.vy = -(Math.random() * 0.5 + 0.3);
                 this.opacity = 0.1;
@@ -1732,9 +1978,9 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
                 this.feedbackTimer = 0;
                 this.feedbackType = null; // 'correct' or 'wrong'
 
-                // Scatter tiles in lower 60% of screen
-                this.x = Math.random() * (canvas.width * 0.8) + canvas.width * 0.1;
-                this.y = canvas.height * 0.45 + Math.random() * (canvas.height * 0.45);
+                // Scatter tiles in lower 60% of screen with margins
+                this.x = Math.random() * (W() * 0.7) + W() * 0.15;
+                this.y = H() * 0.35 + Math.random() * (H() * 0.5);
             }
 
             contains(px, py) {
@@ -1785,7 +2031,8 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
 
                 // Text
                 ctx.fillStyle = 'white';
-                ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC"';
+                const fontSize = W() < 400 ? 16 : 18;
+                ctx.font = \`bold \${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC"\`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.shadowColor = 'transparent';
@@ -1817,17 +2064,14 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
             constructor(index, totalSlots) {
                 this.index = index;
                 this.totalSlots = totalSlots;
-                this.width = 100;
-                this.height = 50;
+                this.width = 80;
+                this.height = 44;
                 this.occupied = false;
                 this.tileIndex = null;
 
-                // Position in top area
-                const padding = 40;
-                const availableWidth = canvas.width - padding * 2;
-                const spacing = availableWidth / (totalSlots + 1);
-                this.x = padding + spacing * (index + 1);
-                this.y = 100;
+                // Position will be set in initLine after measuring text
+                this.x = 0;
+                this.y = 0;
             }
 
             draw() {
@@ -1883,11 +2127,29 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
                 slots.push(new Slot(i, lyricData.tiles.length));
             }
 
+            // Measure text width and set slot widths
+            ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC"';
+            for (let i = 0; i < slots.length; i++) {
+                const textWidth = ctx.measureText(lyricData.tiles[i]).width;
+                slots[i].width = Math.max(textWidth + 20, 50);
+            }
+
+            // Position slots centered on screen
+            const gap = 8;
+            const totalWidth = slots.reduce((sum, s) => sum + s.width, 0) + gap * (slots.length - 1);
+            let startX = (W() - totalWidth) / 2;
+            const slotY = Math.max(90, H() * 0.12);
+            for (const slot of slots) {
+                slot.x = startX + slot.width / 2;
+                slot.y = slotY;
+                startX += slot.width + gap;
+            }
+
             // Create tiles (shuffled)
             tiles = [];
             const shuffled = [...lyricData.tiles].sort(() => Math.random() - 0.5);
 
-            // BUG FIX 1: Track original tile indices to handle duplicates correctly
+            // Track original tile indices to handle duplicates correctly
             const takenOriginalIndices = [];
             shuffled.forEach((text, i) => {
                 let originalIndex = -1;
@@ -1902,13 +2164,6 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
                 tile.correctSlotIndex = originalIndex;
                 tiles.push(tile);
             });
-
-            // Improve slot sizing: dynamically set slot width based on tile text
-            for (let i = 0; i < slots.length; i++) {
-                const tileText = lyricData.tiles[i];
-                const estimatedWidth = tileText.length * 12 + 24;
-                slots[i].width = Math.max(estimatedWidth, 80);
-            }
 
             document.getElementById('current-line').textContent = lineIndex + 1;
         }
@@ -1946,11 +2201,11 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
 
         function getTouchPos(e) {
             const rect = canvas.getBoundingClientRect();
-            // BUG FIX 2: Handle touchend where e.touches is empty by using changedTouches
+            // Handle touchend where e.touches is empty by using changedTouches
             const touch = (e.touches && e.touches.length > 0) ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : e);
             return {
-                x: (touch.clientX - rect.left) * (canvas.width / rect.width),
-                y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
             };
         }
 
@@ -2100,12 +2355,12 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
         // Animation loop
         function animate() {
             // Clear with gradient background
-            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            const gradient = ctx.createLinearGradient(0, 0, 0, H());
             gradient.addColorStop(0, '#1a1f3a');
             gradient.addColorStop(0.5, '#2d1b4e');
             gradient.addColorStop(1, '#1a1a2e');
             ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, W(), H());
 
             // Draw floating music notes
             floatingNotes.forEach((note, i) => {
@@ -2143,7 +2398,6 @@ export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
     </script>
 </body>
 </html>`;
-
 // ─────────────────────────────────────────────
 // 22-constellation
 // ─────────────────────────────────────────────
@@ -2696,7 +2950,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>星际守卫 - Space Guardian</title>
   <style>
     * {
@@ -2715,6 +2969,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       position: fixed;
+      padding-top: env(safe-area-inset-top);
     }
 
     canvas {
@@ -2729,16 +2984,17 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
       top: 0;
       left: 0;
       right: 0;
-      padding: 16px 24px;
+      padding: 12px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       pointer-events: none;
-      font-size: 14px;
+      font-size: 12px;
       color: #00ffff;
       text-shadow: 0 0 12px rgba(0, 255, 255, 0.6), 0 0 24px rgba(0, 255, 255, 0.2);
       font-weight: bold;
       z-index: 10;
+      flex-wrap: wrap;
     }
 
     .lives {
@@ -2791,7 +3047,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
     <div>
       <div class="lives" id="lives"></div>
     </div>
-    <div style="display: flex; gap: 30px;">
+    <div style="display: flex; gap: 10px;">
       <div class="wave" id="wave">WAVE 1</div>
       <div class="combo" id="combo"></div>
       <div class="score" id="score">SCORE 0000</div>
@@ -2808,11 +3064,17 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
     const comboEl = document.getElementById('combo');
 
     function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+
+    // Helper functions for CSS pixel dimensions (after DPR scaling)
+    function W() { return window.innerWidth; }
+    function H() { return window.innerHeight; }
 
     // Game state
     const game = {
@@ -2834,8 +3096,8 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
 
     // Player ship
     const player = {
-      x: canvas.width / 2,
-      y: canvas.height * 0.85,
+      x: W() / 2,
+      y: H() * 0.85,
       speed: 6,
       lastFireTime: 0,
       fireRate: 100,
@@ -2846,14 +3108,14 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
     const input = {
       touchActive: false,
       touchX: 0,
-      mouseX: canvas.width / 2,
+      mouseX: W() / 2,
     };
 
     canvas.addEventListener('touchstart', (e) => {
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
       const y = touch.clientY - rect.top;
-      if (y > canvas.height * 0.67) {
+      if (y > H() * 0.67) {
         input.touchActive = true;
         input.touchX = touch.clientX - rect.left;
       }
@@ -2874,7 +3136,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
     canvas.addEventListener('mousemove', (e) => {
       const rect = canvas.getBoundingClientRect();
       const y = e.clientY - rect.top;
-      if (y > canvas.height * 0.67) {
+      if (y > H() * 0.67) {
         input.mouseX = e.clientX - rect.left;
       }
     });
@@ -2986,7 +3248,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
       if (waveTime > 25 && Math.floor(waveTime) % 30 === 0 && now - game.lastBossTime > 25000) {
         game.lastBossTime = now;
         enemies.push({
-          x: canvas.width / 2 + (Math.random() - 0.5) * 100,
+          x: W() / 2 + (Math.random() - 0.5) * 100,
           y: -60,
           vx: 0,
           vy: 1.2,
@@ -3006,7 +3268,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
         for (let i = 0; i < enemyCount; i++) {
           const type = types[i % types.length];
           enemies.push({
-            x: Math.random() * (canvas.width - 60) + 30,
+            x: Math.random() * (W() - 60) + 30,
             y: -40,
             type,
             vy: speed,
@@ -3147,7 +3409,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
       if (Math.abs(moveDir) > 2) {
         player.x += Math.sign(moveDir) * player.speed;
       }
-      player.x = Math.max(25, Math.min(canvas.width - 25, player.x));
+      player.x = Math.max(25, Math.min(W() - 25, player.x));
 
       // Auto-fire
       fireBullet();
@@ -3161,7 +3423,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
         b.x += b.vx;
         b.y += b.vy;
         b.life -= 0.016;
-        if (b.y < -10 || b.x < -10 || b.x > canvas.width + 10 || b.life <= 0) {
+        if (b.y < -10 || b.x < -10 || b.x > W() + 10 || b.life <= 0) {
           bullets.splice(i, 1);
         }
       }
@@ -3182,7 +3444,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
         e.x += e.vx;
         e.y += e.vy;
 
-        if (e.y > canvas.height) {
+        if (e.y > H()) {
           game.lives--;
           enemies.splice(i, 1);
           if (game.lives <= 0) game.gameOver = true;
@@ -3208,7 +3470,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
           pu.y += pu.vy;
           pu.rotation += 0.08;
           pu.life -= 0.016;
-          if (pu.y > canvas.height || pu.life <= 0) {
+          if (pu.y > H() || pu.life <= 0) {
             game.powerUps.splice(i, 1);
           }
         }
@@ -3254,14 +3516,14 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
     // Drawing functions
     function drawBackground() {
       ctx.fillStyle = '#0a0a12';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, W(), H());
 
       if (!game.starfield) {
         game.starfield = [];
         for (let i = 0; i < 40; i++) {
           game.starfield.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
+            x: Math.random() * W(),
+            y: Math.random() * H(),
             size: Math.random() * 1.5,
             speed: 0.1 + Math.random() * 0.3,
             brightness: 0.3 + Math.random() * 0.7,
@@ -3269,8 +3531,8 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
         }
         for (let i = 0; i < 20; i++) {
           game.starfield.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
+            x: Math.random() * W(),
+            y: Math.random() * H(),
             size: Math.random() * 0.8,
             speed: 0.02 + Math.random() * 0.08,
             brightness: 0.2 + Math.random() * 0.4,
@@ -3280,7 +3542,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
 
       // Parallax scrolling stars
       for (const star of game.starfield) {
-        star.y = (star.y + star.speed) % canvas.height;
+        star.y = (star.y + star.speed) % H();
         ctx.fillStyle = \`rgba(100, 150, 255, \${star.brightness})\`;
         ctx.globalAlpha = star.brightness;
         ctx.fillRect(star.x, star.y, star.size, star.size);
@@ -3289,9 +3551,9 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
       // Nebula clouds
       if (!game.nebulaClouds) {
         game.nebulaClouds = [
-          { x: canvas.width * 0.2, y: canvas.height * 0.1, color: '#4400ff' },
-          { x: canvas.width * 0.8, y: canvas.height * 0.3, color: '#ff0044' },
-          { x: canvas.width * 0.5, y: canvas.height * 0.5, color: '#0044ff' },
+          { x: W() * 0.2, y: H() * 0.1, color: '#4400ff' },
+          { x: W() * 0.8, y: H() * 0.3, color: '#ff0044' },
+          { x: W() * 0.5, y: H() * 0.5, color: '#0044ff' },
         ];
       }
 
@@ -3645,7 +3907,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
         ctx.font = \`bold \${a.scale * 80}px Arial\`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(\`WAVE \${a.waveNum}\`, canvas.width / 2, canvas.height / 2);
+        ctx.fillText(\`WAVE \${a.waveNum}\`, W() / 2, H() / 2);
         ctx.restore();
       }
     }
@@ -3685,10 +3947,10 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
       // Scanline effect
       ctx.strokeStyle = 'rgba(0, 255, 255, 0.03)';
       ctx.lineWidth = 1;
-      for (let i = 0; i < canvas.height; i += 2) {
+      for (let i = 0; i < H(); i += 2) {
         ctx.beginPath();
         ctx.moveTo(0, i);
-        ctx.lineTo(canvas.width, i);
+        ctx.lineTo(W(), i);
         ctx.stroke();
       }
     }
@@ -3699,7 +3961,7 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
       const seconds = elapsed % 60;
 
       ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, W(), H());
 
       ctx.fillStyle = '#ff00ff';
       ctx.shadowColor = 'rgba(255, 0, 255, 0.9)';
@@ -3707,23 +3969,23 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
       ctx.font = 'bold 64px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 80);
+      ctx.fillText('GAME OVER', W() / 2, H() / 2 - 80);
 
       ctx.fillStyle = '#00ffff';
       ctx.shadowColor = 'rgba(0, 255, 255, 0.6)';
       ctx.font = 'bold 28px Arial';
-      ctx.fillText(\`SCORE: \${String(game.score).padStart(6, '0')}\`, canvas.width / 2, canvas.height / 2 - 10);
+      ctx.fillText(\`SCORE: \${String(game.score).padStart(6, '0')}\`, W() / 2, H() / 2 - 10);
 
       ctx.font = '20px Arial';
       ctx.fillStyle = '#ffff00';
       ctx.shadowColor = 'rgba(255, 255, 0, 0.6)';
-      ctx.fillText(\`MAX COMBO: \${game.maxCombo}x\`, canvas.width / 2, canvas.height / 2 + 30);
-      ctx.fillText(\`TIME: \${minutes}:\${String(seconds).padStart(2, '0')}\`, canvas.width / 2, canvas.height / 2 + 60);
+      ctx.fillText(\`MAX COMBO: \${game.maxCombo}x\`, W() / 2, H() / 2 + 30);
+      ctx.fillText(\`TIME: \${minutes}:\${String(seconds).padStart(2, '0')}\`, W() / 2, H() / 2 + 60);
 
       ctx.fillStyle = '#00ff00';
       ctx.shadowColor = 'rgba(0, 255, 0, 0.6)';
       ctx.font = 'bold 18px Arial';
-      ctx.fillText('TAP TO RESTART', canvas.width / 2, canvas.height / 2 + 120);
+      ctx.fillText('TAP TO RESTART', W() / 2, H() / 2 + 120);
     }
 
     function render() {
@@ -3772,8 +4034,8 @@ export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
       scorePopups.length = 0;
       waveAnnouncements.length = 0;
 
-      player.x = canvas.width / 2;
-      player.y = canvas.height * 0.85;
+      player.x = W() / 2;
+      player.y = H() * 0.85;
       player.lastFireTime = 0;
       player.shieldActive = false;
 
