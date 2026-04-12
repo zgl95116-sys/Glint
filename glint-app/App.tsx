@@ -5,6 +5,7 @@ import { MemoryDeckHandle } from './components/MemoryDeck';
 import { streamPageGeneration } from './services/geminiService';
 import type { PromptSource } from './services/geminiService';
 import { buildBridgeHtml } from './services/skeleton';
+import { resolveCards } from './constants/memory';
 
 type Screen = 'home' | 'lockscreen';
 
@@ -65,11 +66,22 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [revealPhase, setRevealPhase] = useState<'idle' | 'blurred' | 'revealing'>('idle');
   const [sandboxSessionKey, setSandboxSessionKey] = useState(0);
+  const [highlightIds, setHighlightIds] = useState<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const deckRef = useRef<MemoryDeckHandle>(null);
   const lastSandboxRuntimeRef = useRef<'stream' | 'prefab'>('stream');
 
-  const handleGenerate = useCallback(async (prompt: string, promptSource: PromptSource, prefabHtml?: string) => {
+  const handleGenerate = useCallback(async (
+    prompt: string,
+    promptSource: PromptSource,
+    prefabHtml?: string,
+    usedMemoryIds?: string[],
+  ) => {
+    const litCards = usedMemoryIds && usedMemoryIds.length > 0 && !prefabHtml
+      ? resolveCards(usedMemoryIds)
+      : [];
+    setHighlightIds(litCards.map((c) => c.id));
+
     console.log('[DEBUG] handleGenerate called, prefabHtml:', typeof prefabHtml, prefabHtml ? 'HAS_CONTENT_len=' + prefabHtml.length : 'UNDEFINED', 'prompt:', prompt.slice(0, 30));
     if (abortRef.current) {
       abortRef.current.abort();
@@ -204,7 +216,11 @@ const App: React.FC = () => {
     };
 
     try {
-      const stream = streamPageGeneration(prompt, promptSource, controller.signal);
+      const augmentedPrompt = litCards.length > 0
+        ? `${prompt}\n\n[关于用户的记忆，请让这些事实自然地出现在画面里（hero 文案、AI 语音、数据标签都可以）: ${litCards.map((c) => c.phrase).join('、')}]`
+        : prompt;
+
+      const stream = streamPageGeneration(augmentedPrompt, promptSource, controller.signal);
 
       for await (const chunk of stream) {
         if (controller.signal.aborted) {
@@ -255,6 +271,7 @@ const App: React.FC = () => {
     setScreen('home');
     setIsLoading(false);
     setHtmlContent('');
+    setHighlightIds([]);
   }, []);
 
   return (
@@ -267,7 +284,7 @@ const App: React.FC = () => {
           isActive={screen === 'lockscreen'}
           revealPhase={revealPhase}
           sandboxSessionKey={sandboxSessionKey}
-          highlightIds={[]}
+          highlightIds={highlightIds}
           onBack={handleBack}
         />
       </div>
