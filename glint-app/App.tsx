@@ -9,6 +9,7 @@ import { resolveCards } from './constants/memory';
 import { PRESET_PROMPTS } from './constants/prompts';
 import { FLIGHT_DELAY_DELTA_HTML } from './constants/flightDelta';
 import { PREFAB_AMBIENT_BOOT } from './constants/prefabs';
+// backgrounds.ts is available for future use but not injected into prompts
 
 type Screen = 'home' | 'lockscreen';
 
@@ -252,9 +253,11 @@ const App: React.FC = () => {
     };
 
     try {
-      const augmentedPrompt = litCards.length > 0
-        ? `${prompt}\n\n[关于用户的记忆，请让这些事实自然地出现在画面里（hero 文案、AI 语音、数据标签都可以）: ${litCards.map((c) => c.phrase).join('、')}]`
-        : prompt;
+      const memoryClause = litCards.length > 0
+        ? `\n\n[关于用户的记忆，请让这些事实自然地出现在画面里: ${litCards.map((c) => c.phrase).join('、')}]`
+        : '';
+
+      const augmentedPrompt = prompt + memoryClause;
 
       const stream = streamPageGeneration(augmentedPrompt, promptSource, controller.signal);
 
