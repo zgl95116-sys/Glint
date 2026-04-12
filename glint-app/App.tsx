@@ -7,6 +7,7 @@ import type { PromptSource } from './services/geminiService';
 import { buildBridgeHtml } from './services/skeleton';
 import { resolveCards } from './constants/memory';
 import { PRESET_PROMPTS } from './constants/prompts';
+import { FLIGHT_DELAY_DELTA_HTML } from './constants/flightDelta';
 
 type Screen = 'home' | 'lockscreen';
 
@@ -146,6 +147,24 @@ const App: React.FC = () => {
     // until there is real content to show.
     setHtmlContent(buildBridgeHtml(prompt));
 
+    // Scripted mid-stream reversal for the flight-delay preset.
+    let flightReversalTimer: ReturnType<typeof setTimeout> | null = null;
+    if (promptSource === 'preset' && prompt.includes('航班延误')) {
+      flightReversalTimer = setTimeout(() => {
+        if (controller.signal.aborted) return;
+        console.log('[DEMO] flight reversal injected');
+        controller.abort();
+        setRevealPhase('blurred');
+        setHtmlContent(FLIGHT_DELAY_DELTA_HTML);
+        setHighlightIds(['flight_regular', 'hotel_preference']);
+        setTimeout(() => {
+          setRevealPhase('revealing');
+          setTimeout(() => setRevealPhase('idle'), 700);
+        }, 50);
+        setIsLoading(false);
+      }, 5200);
+    }
+
     const genStartTime = performance.now();
     console.log(`[PERF] generation_start ts=${genStartTime.toFixed(1)} prompt_len=${prompt.length} source=${promptSource}`);
 
@@ -272,6 +291,9 @@ const App: React.FC = () => {
       if (e?.name === 'AbortError' || controller.signal.aborted) return;
       console.error('Generation failed', e);
     } finally {
+      if (flightReversalTimer) {
+        clearTimeout(flightReversalTimer);
+      }
       if (abortRef.current === controller) {
         setIsLoading(false);
         abortRef.current = null;
