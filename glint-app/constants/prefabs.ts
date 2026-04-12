@@ -383,3 +383,3417 @@ body{overflow:hidden;background:#f5f0e8}
 <div style="text-align:center;margin-top:8px;animation:su .5s ease 2.6s both"><span style="font-family:'Playfair Display',serif;font-size:10px;color:rgba(40,30,20,0.15);letter-spacing:6px;font-style:italic">VOL. 99 · GLINT EDITORIAL</span></div>
 </div>
 </body></html>`;
+
+// ─────────────────────────────────────────────
+// 17-danmaku-mood
+// ─────────────────────────────────────────────
+export const PREFAB_DANMAKU = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>弹幕心情墙 - Glint 灵犀</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0a1428 0%, #1a2a4a 50%, #0d1f3c 100%);
+        }
+
+        canvas {
+            display: block;
+            background: linear-gradient(135deg, #0a1428 0%, #1a2a4a 50%, #0d1f3c 100%);
+        }
+
+        .ui-container {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            padding: 12px 16px;
+            background: rgba(10, 20, 40, 0.4);
+            backdrop-filter: blur(8px);
+            border-radius: 8px;
+            border: 1px solid rgba(100, 213, 255, 0.2);
+        }
+
+        .counter {
+            font-size: 16px;
+            color: #64d5ff;
+            margin-top: 4px;
+        }
+
+        .glint-brand {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 2px;
+        }
+
+        .tap-hint {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            opacity: 0;
+            animation: fadeInOut 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        .input-overlay {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(10, 20, 40, 0) 0%, rgba(10, 20, 40, 0.95) 30%, rgba(10, 20, 40, 0.98) 100%);
+            padding: 40px 20px 30px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .input-overlay.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #64d5ff;
+            background: rgba(20, 40, 80, 0.8);
+            color: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #ffd700;
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .reaction-emoji {
+            position: fixed;
+            font-size: 24px;
+            pointer-events: none;
+            user-select: none;
+            z-index: 999;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(0.8);
+            }
+        }
+
+        .reaction-emoji.animate {
+            animation: floatUp 1.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="danmakuCanvas"></canvas>
+
+    <div class="ui-container">
+        <div class="header">
+            <div>灵犀心情墙</div>
+            <div class="counter">今日弹幕 · <span id="counter">2847</span></div>
+        </div>
+
+        <div class="tap-hint">轻点屏幕添加心情弹幕</div>
+
+        <div class="glint-brand">GLINT 灵犀</div>
+    </div>
+
+    <div class="input-overlay" id="inputOverlay">
+        <input type="text" class="input-field" id="danmakuInput" placeholder="分享你的心情..." maxlength="30">
+        <div class="input-hint">按 Enter 发送，按 Esc 取消</div>
+    </div>
+
+    <script>
+        // Mood phrases
+        const moodPhrases = [
+            "今天摸鱼成功🐟",
+            "咖啡续命中☕",
+            "想下班了💤",
+            "周五快乐🎉",
+            "代码写不动了💻",
+            "外卖到了🍜",
+            "今天天气真好☀️",
+            "又是充实的一天",
+            "好困😴",
+            "加油打工人💪",
+            "晚上吃什么🤔",
+            "想去旅游✈️",
+            "音乐真好听🎵",
+            "减肥从明天开始",
+            "今天心情不错😊",
+            "我要努力💯",
+            "天选打工人",
+            "起床困难症",
+            "快乐不再来",
+            "每天都在进步"
+        ];
+
+        const reactionEmojis = ["❤️", "😂", "👍", "🔥", "💯", "🎉", "✨", "😍", "🤔", "👏"];
+
+        const colors = [
+            "#ff6b6b", "#ff8787", "#ff922b", "#ffa94d",
+            "#ffd93d", "#6bcf7f", "#4ecdc4", "#45b7d1",
+            "#96ceb4", "#dda15e", "#bc6c25", "#d4a5a5"
+        ];
+
+        const bgColors = [
+            "rgba(255, 107, 107, 0.2)",
+            "rgba(255, 160, 77, 0.2)",
+            "rgba(217, 217, 38, 0.2)",
+            "rgba(107, 207, 127, 0.2)",
+            "rgba(78, 205, 196, 0.2)",
+            "rgba(69, 183, 209, 0.2)",
+            "rgba(150, 206, 180, 0.2)",
+            "rgba(222, 165, 95, 0.2)"
+        ];
+
+        class Danmaku {
+            constructor(text, x, y, speed, fontSize, color, bgColor = null, opacity = 1, isUserDanmaku = false) {
+                this.text = text;
+                this.x = x;
+                this.y = y;
+                this.speed = speed;
+                this.fontSize = fontSize;
+                this.color = color;
+                this.bgColor = bgColor;
+                this.opacity = opacity;
+                this.alive = true;
+                this.createdAt = Date.now();
+                this.ttl = 8000 + Math.random() * 4000; // 8-12s lifetime
+                this.wobblePhase = Math.random() * Math.PI * 2;
+                this.isUserDanmaku = isUserDanmaku;
+            }
+
+            update(deltaTime) {
+                this.x -= this.speed * deltaTime / 16.67; // Normalize to 60fps
+
+                // Fade out at the end
+                const age = Date.now() - this.createdAt;
+                if (age > this.ttl - 2000) {
+                    this.opacity = Math.max(0, 1 - (age - (this.ttl - 2000)) / 2000);
+                }
+
+                if (this.x + 200 < 0) {
+                    this.alive = false;
+                }
+            }
+
+            getWobbleOffset(canvasHeight) {
+                const age = Date.now() - this.createdAt;
+                const wobble = Math.sin(age / 300 + this.wobblePhase) * 3; // 3px max wobble
+                return wobble;
+            }
+
+            draw(ctx, canvasHeight) {
+                if (!this.alive) return;
+
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+
+                const wobbleY = this.getWobbleOffset(canvasHeight);
+                const drawY = this.y + wobbleY;
+
+                // Draw golden glow for user danmaku
+                if (this.isUserDanmaku) {
+                    ctx.fillStyle = "rgba(255, 215, 0, 0.15)";
+                    ctx.font = \`\${this.fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif\`;
+                    const metrics = ctx.measureText(this.text);
+                    const width = metrics.width + 32;
+                    const height = this.fontSize + 16;
+                    ctx.beginPath();
+                    ctx.roundRect(this.x - 16, drawY - this.fontSize / 2 - 8, width, height, 8);
+                    ctx.fill();
+                }
+
+                // Draw background pill if exists
+                if (this.bgColor) {
+                    ctx.fillStyle = this.bgColor;
+                    ctx.font = \`\${this.fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif\`;
+                    const metrics = ctx.measureText(this.text);
+                    const width = metrics.width + 16;
+                    const height = this.fontSize + 8;
+                    ctx.beginPath();
+                    ctx.roundRect(this.x - 8, drawY - this.fontSize / 2 - 4, width, height, 4);
+                    ctx.fill();
+                }
+
+                // Draw text with shadow glow
+                ctx.font = \`\${this.fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif\`;
+                ctx.textBaseline = "middle";
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 8;
+                ctx.fillStyle = this.color;
+                ctx.fillText(this.text, this.x, drawY);
+                ctx.shadowColor = "transparent";
+                ctx.shadowBlur = 0;
+
+                ctx.restore();
+            }
+        }
+
+        const canvas = document.getElementById("danmakuCanvas");
+        const ctx = canvas.getContext("2d");
+        const inputOverlay = document.getElementById("inputOverlay");
+        const danmakuInput = document.getElementById("danmakuInput");
+        const counterEl = document.getElementById("counter");
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let danmakuList = [];
+        let lastTime = Date.now();
+        let spawnTimer = 0;
+        let counter = 2847;
+        let inputActive = false;
+        let burstMode = false;
+        let burstCount = 0;
+
+        // Star field
+        let stars = [];
+        function generateStars() {
+            stars = [];
+            for (let i = 0; i < 60; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 1.5,
+                    opacity: Math.random() * 0.6 + 0.2,
+                    twinklePhase: Math.random() * Math.PI * 2,
+                    twinkleSpeed: Math.random() * 0.002 + 0.001
+                });
+            }
+        }
+        generateStars();
+
+        // Polyfill for roundRect
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.beginPath();
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + r, y, r);
+                this.closePath();
+                return this;
+            };
+        }
+
+        function spawnRandomDanmaku() {
+            const phrase = moodPhrases[Math.floor(Math.random() * moodPhrases.length)];
+            const y = 40 + Math.random() * (canvas.height - 80);
+            const speed = 1 + Math.random() * 1.5;
+            const fontSize = 14 + Math.random() * 14;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const hasBg = Math.random() > 0.4;
+            const bgColor = hasBg ? bgColors[Math.floor(Math.random() * bgColors.length)] : null;
+            const opacity = 0.6 + Math.random() * 0.4;
+            const initialX = Math.random() * canvas.width * 1.5; // Spread initial x
+
+            danmakuList.push(new Danmaku(phrase, initialX, y, speed, fontSize, color, bgColor, opacity, false));
+            counter++;
+            updateCounter();
+        }
+
+        function spawnUserDanmaku(text) {
+            const y = 60 + Math.random() * (canvas.height - 120); // Random y position
+            const speed = 2;
+            const fontSize = 22; // Slightly larger
+            const color = "#ffd700";
+            const bgColor = "rgba(255, 215, 0, 0.3)";
+            const displayText = "✦ " + text; // Add prefix
+
+            danmakuList.push(new Danmaku(displayText, canvas.width, y, speed, fontSize, color, bgColor, 1, true));
+            counter += 10;
+            updateCounter();
+        }
+
+        function spawnReactionEmoji(x, y) {
+            const emoji = reactionEmojis[Math.floor(Math.random() * reactionEmojis.length)];
+            const el = document.createElement("div");
+            el.className = "reaction-emoji animate";
+            el.textContent = emoji;
+            el.style.left = x + "px";
+            el.style.top = y + "px";
+            el.style.transform = "translate(-50%, -50%)";
+            document.body.appendChild(el);
+
+            setTimeout(() => el.remove(), 1500);
+        }
+
+        function updateCounter() {
+            counterEl.textContent = counter.toLocaleString();
+        }
+
+        function drawStars() {
+            const now = Date.now();
+            stars.forEach(star => {
+                const twinkle = Math.sin(now * star.twinkleSpeed + star.twinklePhase);
+                const opacity = star.opacity * (0.4 + 0.6 * (twinkle + 1) / 2);
+                ctx.fillStyle = \`rgba(255, 255, 255, \${opacity})\`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function animate() {
+            const now = Date.now();
+            const deltaTime = now - lastTime;
+            lastTime = now;
+
+            // Update danmaku
+            danmakuList.forEach(d => d.update(deltaTime));
+            danmakuList = danmakuList.filter(d => d.alive);
+
+            // Spawn new danmaku with burst pacing
+            spawnTimer += deltaTime;
+            let spawnInterval = 500 + Math.random() * 500;
+
+            // Burst mode: spawn 2 close together, then longer gap
+            if (burstMode) {
+                spawnInterval = 200 + Math.random() * 100;
+                burstCount++;
+                if (burstCount >= 2) {
+                    burstMode = false;
+                    burstCount = 0;
+                    spawnInterval = 1000 + Math.random() * 500; // Longer gap after burst
+                }
+            } else if (Math.random() > 0.8) {
+                // Chance to enter burst mode
+                burstMode = true;
+                burstCount = 0;
+                spawnInterval = 200 + Math.random() * 100;
+            }
+
+            if (spawnTimer > spawnInterval) {
+                spawnRandomDanmaku();
+                spawnTimer = 0;
+            }
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw stars
+            drawStars();
+
+            // Draw danmaku
+            danmakuList.forEach(d => d.draw(ctx, canvas.height));
+
+            requestAnimationFrame(animate);
+        }
+
+        function openInput() {
+            inputActive = true;
+            inputOverlay.classList.add("active");
+            danmakuInput.focus();
+            danmakuInput.value = "";
+        }
+
+        function closeInput() {
+            inputActive = false;
+            inputOverlay.classList.remove("active");
+        }
+
+        function handleDanmakuSubmit() {
+            const text = danmakuInput.value.trim();
+            if (text) {
+                spawnUserDanmaku(text);
+            }
+            closeInput();
+        }
+
+        // Event listeners
+        canvas.addEventListener("click", (e) => {
+            if (!inputActive) {
+                // Random chance to show reaction emoji
+                if (Math.random() > 0.3) {
+                    spawnReactionEmoji(e.clientX, e.clientY);
+                } else {
+                    openInput();
+                }
+            }
+        });
+
+        danmakuInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                handleDanmakuSubmit();
+            } else if (e.key === "Escape") {
+                closeInput();
+            }
+        });
+
+        window.addEventListener("resize", () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            generateStars(); // Regenerate stars for new canvas size
+        });
+
+        // Initialize
+        for (let i = 0; i < 20; i++) {
+            spawnRandomDanmaku();
+        }
+
+        animate();
+    </script>
+</body>
+</html>`;
+
+// ─────────────────────────────────────────────
+// 18-sound-wave
+// ─────────────────────────────────────────────
+export const PREFAB_SOUND_WAVE = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glint - 音浪 (Sound Wave)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: rgba(200, 200, 220, 0.6);
+            font-size: 11px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="info">✨ GLINT</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Responsive canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // === Configuration ===
+        const CONFIG = {
+            numBars: 64,
+            centerX: 0,
+            centerY: 0,
+            baseRadius: 0,
+            barMaxLength: 0,
+            numParticles: 35,
+            particleBaseRadius: 0,
+        };
+
+        function updateDimensions() {
+            CONFIG.centerX = canvas.width / 2;
+            CONFIG.centerY = canvas.height / 2;
+            CONFIG.baseRadius = Math.min(canvas.width, canvas.height) * 0.2;
+            CONFIG.barMaxLength = Math.min(canvas.width, canvas.height) * 0.25;
+            CONFIG.particleBaseRadius = CONFIG.baseRadius + CONFIG.barMaxLength * 0.6;
+        }
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+
+        // === State ===
+        const state = {
+            time: 0,
+            touchActive: false,
+            touchAmplitude: 0, // Springs back from 1.0
+            baseAmplitude: 0.7,
+            beatPattern: 0, // Changes every few seconds
+            colors: {
+                hue: 280, // Start with purple/blue
+                saturation: 75,
+                lightness: 50,
+                hueAtTouchStart: 280,
+            },
+            rippleRadius: 0,
+            rippleOpacity: 0,
+            lastAudioData: null,
+            smoothAudioData: null,
+            beatDropIntensity: 0,
+        };
+
+        // === Particle System ===
+        class Particle {
+            constructor() {
+                this.angle = Math.random() * Math.PI * 2;
+                this.distance = CONFIG.particleBaseRadius + (Math.random() - 0.5) * 40;
+                this.size = 2 + Math.random() * 3;
+                this.phase = Math.random() * Math.PI * 2;
+                this.trailX = [];
+                this.trailY = [];
+                this.trailLife = [];
+                this.lastX = 0;
+                this.lastY = 0;
+            }
+
+            update(time, amplitude, touchActive) {
+                this.phase = time * 2 + this.angle;
+                const beatPulse = Math.sin(time * 4) * 0.5 + 0.5;
+                this.currentSize = this.size * (0.5 + beatPulse * amplitude * 0.8);
+
+                // Calculate current position
+                this.x = CONFIG.centerX + Math.cos(this.angle) * this.distance;
+                this.y = CONFIG.centerY + Math.sin(this.angle) * this.distance;
+
+                // Add trail point if touch is active and particle has moved
+                if (touchActive && (Math.abs(this.x - this.lastX) > 0.5 || Math.abs(this.y - this.lastY) > 0.5)) {
+                    this.trailX.push(this.x);
+                    this.trailY.push(this.y);
+                    this.trailLife.push(0.8);
+
+                    // Keep trail limited to last 5 points
+                    if (this.trailX.length > 5) {
+                        this.trailX.shift();
+                        this.trailY.shift();
+                        this.trailLife.shift();
+                    }
+                }
+
+                // Fade trail
+                for (let i = 0; i < this.trailLife.length; i++) {
+                    this.trailLife[i] *= 0.85;
+                }
+
+                this.lastX = this.x;
+                this.lastY = this.y;
+            }
+
+            draw(ctx, centerX, centerY, hue) {
+                // Draw trail
+                for (let i = 0; i < this.trailX.length; i++) {
+                    if (this.trailLife[i] > 0.05) {
+                        ctx.fillStyle = \`hsla(\${hue}, 100%, 65%, \${this.trailLife[i] * 0.2})\`;
+                        ctx.beginPath();
+                        ctx.arc(this.trailX[i], this.trailY[i], this.currentSize * 0.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Draw particle
+                ctx.fillStyle = \`hsla(\${hue}, 100%, 65%, \${0.3 + Math.sin(this.phase) * 0.3})\`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.currentSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        const particles = Array.from({ length: CONFIG.numParticles }, () => new Particle());
+
+        // === Audio Data Generation ===
+        function generateAudioData(time, beatPattern) {
+            const data = new Array(CONFIG.numBars);
+
+            // Multiple sine waves at different frequencies
+            const freq1 = Math.sin(time * 0.5) * 2 + 3;
+            const freq2 = Math.sin(time * 0.3) * 1.5 + 2.5;
+            const freq3 = Math.sin(time * 0.7) * 1 + 1.5;
+
+            for (let i = 0; i < CONFIG.numBars; i++) {
+                const angle = (i / CONFIG.numBars) * Math.PI * 2;
+
+                // Base sine waves
+                let value = Math.sin(time * freq1 + angle * 0.3) * 0.4;
+                value += Math.sin(time * freq2 + angle * 0.6) * 0.3;
+                value += Math.sin(time * freq3 + angle) * 0.2;
+
+                // Beat pattern modulation
+                const beatFreq = beatPattern % 4 < 2 ? 2 : 3;
+                value *= (0.7 + Math.sin(time * beatFreq) * 0.3);
+
+                // Bass boost: indices 0-8 and 56-63 have higher amplitude
+                if (i < 8 || i >= 56) {
+                    value *= 1.3;
+                }
+
+                // Beat drop every ~8 seconds: spike all bars briefly
+                const beatDropCycle = (time % 8);
+                if (beatDropCycle > 7.7 && beatDropCycle < 8.0) {
+                    const dropIntensity = Math.sin((beatDropCycle - 7.7) / 0.3 * Math.PI);
+                    value = Math.max(value, dropIntensity * 0.9);
+                    state.beatDropIntensity = dropIntensity;
+                }
+
+                // Small random jitter
+                value += (Math.random() - 0.5) * 0.1;
+
+                // Smooth and clamp
+                data[i] = Math.max(0, Math.min(1, (value + 1) / 2));
+            }
+
+            return data;
+        }
+
+        // === Smooth Audio Data Interpolation ===
+        function smoothAudioData(newData, oldData, factor = 0.15) {
+            if (!oldData) return newData;
+            const smoothed = new Array(CONFIG.numBars);
+            for (let i = 0; i < CONFIG.numBars; i++) {
+                smoothed[i] = oldData[i] * (1 - factor) + newData[i] * factor;
+            }
+            return smoothed;
+        }
+
+        // === Drawing Functions ===
+        function drawBackground() {
+            const gradient = ctx.createRadialGradient(
+                CONFIG.centerX, CONFIG.centerY, 0,
+                CONFIG.centerX, CONFIG.centerY,
+                Math.sqrt(CONFIG.centerX ** 2 + CONFIG.centerY ** 2)
+            );
+
+            const hue = state.colors.hue;
+            gradient.addColorStop(0, \`hsla(\${hue}, 40%, 15%, 1)\`);
+            gradient.addColorStop(0.5, \`hsla(\${hue - 20}, 30%, 8%, 1)\`);
+            gradient.addColorStop(1, \`hsla(\${hue - 40}, 20%, 5%, 1)\`);
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // === Draw Outer Glow Ring ===
+        function drawOuterGlowRing(amplitude) {
+            const glowRadius = CONFIG.baseRadius + CONFIG.barMaxLength * 0.8;
+            const hue = state.colors.hue;
+
+            // Create large radial gradient for glow effect
+            const glowGradient = ctx.createRadialGradient(
+                CONFIG.centerX, CONFIG.centerY, glowRadius * 0.8,
+                CONFIG.centerX, CONFIG.centerY, glowRadius * 1.5
+            );
+
+            const glowOpacity = 0.15 * amplitude;
+            glowGradient.addColorStop(0, \`hsla(\${hue}, 80%, 50%, \${glowOpacity})\`);
+            glowGradient.addColorStop(1, \`hsla(\${hue}, 80%, 50%, 0)\`);
+
+            ctx.fillStyle = glowGradient;
+            ctx.beginPath();
+            ctx.arc(CONFIG.centerX, CONFIG.centerY, glowRadius * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawVisualizerRing(audioData, amplitude) {
+            const barRadius = CONFIG.baseRadius;
+            const maxBarLength = CONFIG.barMaxLength;
+
+            for (let i = 0; i < CONFIG.numBars; i++) {
+                const angle = (i / CONFIG.numBars) * Math.PI * 2 - Math.PI / 2;
+
+                // Bar height from audio data + amplitude boost
+                let barHeight = audioData[i] * amplitude * maxBarLength;
+
+                // Add touch reaction
+                if (state.touchActive) {
+                    barHeight *= (1 + state.touchAmplitude * 0.5);
+                }
+
+                const startX = CONFIG.centerX + Math.cos(angle) * barRadius;
+                const startY = CONFIG.centerY + Math.sin(angle) * barRadius;
+                const endX = CONFIG.centerX + Math.cos(angle) * (barRadius + barHeight);
+                const endY = CONFIG.centerY + Math.sin(angle) * (barRadius + barHeight);
+
+                // Color gradient based on bar index
+                const hue = (state.colors.hue + (i / CONFIG.numBars) * 60) % 360;
+                const saturation = 70 + Math.sin(state.time + i * 0.1) * 20;
+                const lightness = 50 + Math.sin(state.time * 2 + i * 0.05) * 10;
+
+                const barColor = \`hsl(\${hue}, \${saturation}%, \${lightness}%)\`;
+
+                // Draw bar with glow (thicker bars with rounded caps)
+                ctx.strokeStyle = barColor;
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                // Inner mirror reflection (shorter, more transparent)
+                const reflectionHeight = barHeight * 0.4;
+                const reflectEndX = CONFIG.centerX + Math.cos(angle) * (barRadius - reflectionHeight);
+                const reflectEndY = CONFIG.centerY + Math.sin(angle) * (barRadius - reflectionHeight);
+                ctx.strokeStyle = barColor;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.15;
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(reflectEndX, reflectEndY);
+                ctx.stroke();
+
+                // Glow effect
+                ctx.strokeStyle = barColor;
+                ctx.lineWidth = 6;
+                ctx.globalAlpha = 0.15;
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function drawCenterContent() {
+            const radius = CONFIG.baseRadius;
+
+            // Center circle background
+            const gradient = ctx.createRadialGradient(
+                CONFIG.centerX, CONFIG.centerY, 0,
+                CONFIG.centerX, CONFIG.centerY, radius * 1.2
+            );
+            const hue = state.colors.hue;
+            gradient.addColorStop(0, \`hsla(\${hue}, 60%, 25%, 0.6)\`);
+            gradient.addColorStop(1, \`hsla(\${hue}, 40%, 10%, 0.3)\`);
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(CONFIG.centerX, CONFIG.centerY, radius * 1.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Border
+            ctx.strokeStyle = \`hsla(\${hue}, 80%, 60%, 0.4)\`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Rotating arc ring around center
+            const arcRadius = radius * 0.75;
+            const arcRotation = state.time * 0.5; // Slow rotation
+            ctx.strokeStyle = \`hsla(\${hue}, 70%, 50%, 0.3)\`;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 8]);
+            ctx.beginPath();
+            ctx.arc(CONFIG.centerX, CONFIG.centerY, arcRadius, arcRotation, arcRotation + Math.PI * 1.5);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Text styling
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, sans-serif';
+
+            // "正在播放"
+            ctx.fillStyle = 'rgba(200, 200, 220, 0.7)';
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText('正在播放', CONFIG.centerX, CONFIG.centerY - 35);
+
+            // Song name
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText('夜空中最亮的星', CONFIG.centerX, CONFIG.centerY);
+
+            // Artist
+            ctx.fillStyle = 'rgba(200, 200, 220, 0.7)';
+            ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText('逃跑计划', CONFIG.centerX, CONFIG.centerY + 25);
+
+            // Play icon (decorative) with mini EQ bars next to it
+            const playX = CONFIG.centerX - 15;
+            const playY = CONFIG.centerY + 50;
+            ctx.fillStyle = 'rgba(200, 200, 220, 0.6)';
+            ctx.beginPath();
+            ctx.moveTo(playX, playY - 6);
+            ctx.lineTo(playX, playY + 6);
+            ctx.lineTo(playX + 8, playY);
+            ctx.fill();
+
+            // Mini EQ bars (3 small bars next to play icon)
+            if (state.smoothAudioData) {
+                const eqX = playX + 18;
+                const eqY = playY;
+                const eqBarWidth = 2;
+                const eqSpacing = 4;
+                const eqIndices = [8, 32, 56]; // Bass, mid, treble
+
+                eqIndices.forEach((idx, i) => {
+                    const eqValue = state.smoothAudioData[idx] * 8;
+                    const barX = eqX + i * eqSpacing;
+                    const barTop = eqY - eqValue / 2;
+                    const barHeight = eqValue;
+
+                    ctx.fillStyle = \`hsla(\${hue}, 80%, 60%, 0.6)\`;
+                    ctx.fillRect(barX, barTop, eqBarWidth, barHeight);
+                });
+            }
+        }
+
+        function drawTimeline(audioData) {
+            const songDuration = 252; // 4:12 in seconds
+            const songTime = state.time % songDuration;
+
+            const timelineY = CONFIG.centerY + CONFIG.baseRadius * 1.3 + 40;
+            const timelineWidth = Math.min(canvas.width * 0.6, 300);
+            const timelineX = CONFIG.centerX - timelineWidth / 2;
+            const timelineHeight = 3;
+
+            // Background bar
+            ctx.fillStyle = 'rgba(100, 100, 120, 0.3)';
+            ctx.fillRect(timelineX, timelineY, timelineWidth, timelineHeight);
+
+            // Progress (fixed to use actual song duration)
+            const progress = songTime / songDuration;
+            const progressWidth = timelineWidth * progress;
+
+            const hue = state.colors.hue;
+            ctx.fillStyle = \`hsl(\${hue}, 70%, 55%)\`;
+            ctx.fillRect(timelineX, timelineY, progressWidth, timelineHeight);
+
+            // Time text (fixed to show correct minutes and seconds)
+            ctx.fillStyle = 'rgba(200, 200, 220, 0.7)';
+            ctx.textAlign = 'center';
+            ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
+            const currentMin = Math.floor(songTime / 60);
+            const currentSec = Math.floor(songTime % 60);
+            const currentStr = \`\${currentMin}:\${String(currentSec).padStart(2, '0')}\`;
+            ctx.fillText(currentStr + ' / 4:12', CONFIG.centerX, timelineY + 20);
+        }
+
+        // === Input Handling ===
+        function handleTouchStart(e) {
+            state.touchActive = true;
+            state.touchAmplitude = 1.0;
+            state.colors.hueAtTouchStart = state.colors.hue;
+            state.rippleRadius = 0;
+            state.rippleOpacity = 0.8;
+
+            // Get touch/mouse position for ripple
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            state.rippleX = clientX - rect.left;
+            state.rippleY = clientY - rect.top;
+        }
+
+        function handleTouchEnd() {
+            state.touchActive = false;
+        }
+
+        canvas.addEventListener('touchstart', handleTouchStart);
+        canvas.addEventListener('touchend', handleTouchEnd);
+        canvas.addEventListener('mousedown', handleTouchStart);
+        canvas.addEventListener('mouseup', handleTouchEnd);
+
+        // === Draw Ripple Effect ===
+        function drawRipple() {
+            if (state.rippleOpacity > 0.01 && state.rippleX !== undefined) {
+                const maxRippleRadius = 150;
+                state.rippleRadius += 3;
+                state.rippleOpacity *= 0.92;
+
+                if (state.rippleRadius < maxRippleRadius) {
+                    ctx.strokeStyle = \`hsla(\${state.colors.hue}, 80%, 60%, \${state.rippleOpacity})\`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(state.rippleX, state.rippleY, state.rippleRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // === Animation Loop ===
+        function animate() {
+            state.time += 0.016; // ~60fps
+
+            // Update beat pattern every 4 seconds
+            state.beatPattern = Math.floor(state.time / 4);
+
+            // Slowly rotate hue
+            let hue = (280 + state.time * 5) % 360;
+
+            // Shift toward warmer hue during touch
+            if (state.touchActive) {
+                const warmShift = state.touchAmplitude * 30;
+                hue = (hue + warmShift) % 360;
+            }
+            state.colors.hue = hue;
+
+            // Spring back touch amplitude
+            state.touchAmplitude *= 0.95;
+
+            // Generate and normalize audio data
+            const rawAudioData = generateAudioData(state.time, state.beatPattern);
+
+            // Smooth interpolation of audio data
+            if (!state.smoothAudioData) {
+                state.smoothAudioData = rawAudioData;
+            } else {
+                state.smoothAudioData = smoothAudioData(rawAudioData, state.smoothAudioData);
+            }
+
+            const totalAmplitude = state.baseAmplitude + state.touchAmplitude * 0.3;
+
+            // Update particles with trail support
+            particles.forEach(p => p.update(state.time, totalAmplitude, state.touchActive));
+
+            // Draw frame
+            drawBackground();
+
+            // Draw outer glow ring
+            drawOuterGlowRing(totalAmplitude);
+
+            // Draw particles (behind)
+            particles.forEach(p => p.draw(ctx, CONFIG.centerX, CONFIG.centerY, state.colors.hue));
+
+            // Draw visualizer ring
+            drawVisualizerRing(state.smoothAudioData, totalAmplitude);
+
+            // Draw center content
+            drawCenterContent();
+
+            // Draw ripple effect
+            drawRipple();
+
+            // Draw timeline
+            drawTimeline(state.smoothAudioData);
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>`;
+
+// ─────────────────────────────────────────────
+// 21-magnetic-poetry
+// ─────────────────────────────────────────────
+export const PREFAB_MAGNETIC_POETRY = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歌词拼图 · Glint Lockscreen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1f3a 0%, #2d1b4e 50%, #1a1a2e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 2px;
+        }
+
+        .progress {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 1px;
+        }
+
+        .completion-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 100;
+            pointer-events: all;
+        }
+
+        .completion-overlay.show {
+            display: flex;
+        }
+
+        .completion-content {
+            text-align: center;
+            color: white;
+        }
+
+        .completion-emoji {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        .completion-text {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #ffd700;
+        }
+
+        .completion-lyrics {
+            max-width: 80vw;
+            font-size: 16px;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+            font-style: italic;
+        }
+
+        .replay-button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .replay-button:hover {
+            transform: scale(1.05);
+        }
+
+        .replay-button:active {
+            transform: scale(0.98);
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 5px #ffd700); }
+            50% { filter: drop-shadow(0 0 15px #ffd700); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="overlay">
+        <div class="title">🎵 歌词拼图</div>
+        <div class="progress">第 <span id="current-line">1</span>/5 句</div>
+        <div class="footer">GLINT · 灵犀</div>
+    </div>
+    <div class="completion-overlay" id="completion">
+        <div class="completion-content">
+            <div class="completion-emoji">🎵</div>
+            <div class="completion-text">完成！</div>
+            <div class="completion-lyrics" id="completion-lyrics"></div>
+            <button class="replay-button" onclick="location.reload()">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Responsive canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Lyric data: each line with its tiles
+        const lyrics = [
+            { line: '夜空中最亮的星', tiles: ['夜空中', '最亮的', '星'] },
+            { line: '能否听清', tiles: ['能否', '听清'] },
+            { line: '那仰望的人', tiles: ['那', '仰望的', '人'] },
+            { line: '心底的孤独和叹息', tiles: ['心底的', '孤独', '和', '叹息'] },
+            { line: '我祈祷拥有一颗透明的心灵', tiles: ['我祈祷', '拥有', '一颗', '透明的', '心灵'] }
+        ];
+
+        const allLyrics = lyrics.map(l => l.line).join('\n');
+
+        // Pastel/gradient colors for tiles
+        const colors = [
+            '#FF6B9D', // pink
+            '#C44569', // dark pink
+            '#A8E6CF', // mint
+            '#56CCF2', // cyan
+            '#BB6BD9', // purple
+            '#F2994E', // orange
+            '#F2C94C', // gold
+            '#EB5757'  // red
+        ];
+
+        // Music note decoration particles
+        const musicNotes = ['♪', '♫', '♬', '🎵'];
+
+        // Game state
+        let currentLineIndex = 0;
+        let gameComplete = false;
+
+        // Floating particle class
+        class FloatingNote {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height + 50;
+                this.vx = (Math.random() - 0.5) * 1;
+                this.vy = -(Math.random() * 0.5 + 0.3);
+                this.opacity = 0.1;
+                this.life = 8000; // 8 seconds
+                this.age = 0;
+                this.char = musicNotes[Math.floor(Math.random() * musicNotes.length)];
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.age += 16;
+                this.opacity = 0.15 * Math.max(0, 1 - this.age / this.life);
+            }
+
+            draw() {
+                if (this.opacity <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.font = 'bold 32px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = 'white';
+                ctx.fillText(this.char, this.x, this.y);
+                ctx.restore();
+            }
+
+            isDead() {
+                return this.age > this.life;
+            }
+        }
+
+        // Confetti particle
+        class Confetti {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = Math.random() * -6 - 2;
+                this.life = 1200;
+                this.age = 0;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.3;
+                this.size = Math.random() * 8 + 4;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.3; // gravity
+                this.rotation += this.rotationSpeed;
+                this.age += 16;
+            }
+
+            draw() {
+                const progress = this.age / this.life;
+                const opacity = Math.max(0, 1 - progress);
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.restore();
+            }
+
+            isDead() {
+                return this.age > this.life;
+            }
+        }
+
+        // Tile class
+        class Tile {
+            constructor(text, index, totalTiles) {
+                this.text = text;
+                this.index = index;
+                this.totalTiles = totalTiles;
+                this.color = colors[index % colors.length];
+                this.width = 0; // Will be measured from text
+                this.height = 44;
+                this.isDragging = false;
+                this.isPlaced = false;
+                this.dragOffsetX = 0;
+                this.dragOffsetY = 0;
+                this.scale = 1;
+                this.targetScale = 1;
+                this.correctSlotIndex = index;
+                this.currentSlotIndex = null;
+                this.feedbackTimer = 0;
+                this.feedbackType = null; // 'correct' or 'wrong'
+
+                // Scatter tiles in lower 60% of screen
+                this.x = Math.random() * (canvas.width * 0.8) + canvas.width * 0.1;
+                this.y = canvas.height * 0.45 + Math.random() * (canvas.height * 0.45);
+            }
+
+            contains(px, py) {
+                return px > this.x - this.width / 2 && px < this.x + this.width / 2 &&
+                       py > this.y - this.height / 2 && py < this.y + this.height / 2;
+            }
+
+            draw() {
+                ctx.save();
+
+                // Feedback animation
+                if (this.feedbackTimer > 0) {
+                    if (this.feedbackType === 'wrong') {
+                        const bounce = Math.sin(this.feedbackTimer / 50) * 5;
+                        this.x += bounce;
+                    }
+                    this.feedbackTimer -= 16;
+                }
+
+                // Shadow
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                ctx.shadowBlur = this.isDragging ? 15 : 8;
+                ctx.shadowOffsetY = this.isDragging ? 8 : 4;
+
+                // Background gradient
+                const gradient = ctx.createLinearGradient(
+                    this.x - this.width / 2, this.y - this.height / 2,
+                    this.x + this.width / 2, this.y + this.height / 2
+                );
+                gradient.addColorStop(0, this.color);
+                gradient.addColorStop(1, this.adjustColor(this.color, -20));
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.roundRect(
+                    this.x - this.width / 2,
+                    this.y - this.height / 2,
+                    this.width,
+                    this.height,
+                    8
+                );
+                ctx.fill();
+
+                // Border
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Text
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'transparent';
+
+                // Measure text width
+                const metrics = ctx.measureText(this.text);
+                this.width = Math.max(metrics.width + 24, 60);
+
+                ctx.fillText(this.text, this.x, this.y);
+
+                ctx.restore();
+            }
+
+            adjustColor(color, amount) {
+                const hex = color.replace('#', '');
+                const r = Math.max(0, Math.min(255, parseInt(hex.slice(0, 2), 16) + amount));
+                const g = Math.max(0, Math.min(255, parseInt(hex.slice(2, 4), 16) + amount));
+                const b = Math.max(0, Math.min(255, parseInt(hex.slice(4, 6), 16) + amount));
+                return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+            }
+
+            update() {
+                this.scale += (this.targetScale - this.scale) * 0.12;
+            }
+        }
+
+        // Slot class
+        class Slot {
+            constructor(index, totalSlots) {
+                this.index = index;
+                this.totalSlots = totalSlots;
+                this.width = 100;
+                this.height = 50;
+                this.occupied = false;
+                this.tileIndex = null;
+
+                // Position in top area
+                const padding = 40;
+                const availableWidth = canvas.width - padding * 2;
+                const spacing = availableWidth / (totalSlots + 1);
+                this.x = padding + spacing * (index + 1);
+                this.y = 100;
+            }
+
+            draw() {
+                ctx.save();
+
+                // Outline
+                ctx.strokeStyle = this.occupied ? '#ffd700' : 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = this.occupied ? 3 : 2;
+                ctx.beginPath();
+                ctx.roundRect(
+                    this.x - this.width / 2,
+                    this.y - this.height / 2,
+                    this.width,
+                    this.height,
+                    6
+                );
+                ctx.stroke();
+
+                // Glow if occupied
+                if (this.occupied) {
+                    ctx.shadowColor = '#ffd700';
+                    ctx.shadowBlur = 15;
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            contains(x, y) {
+                return x > this.x - this.width / 2 && x < this.x + this.width / 2 &&
+                       y > this.y - this.height / 2 && y < this.y + this.height / 2;
+            }
+        }
+
+        // Game state
+        let tiles = [];
+        let slots = [];
+        let floatingNotes = [];
+        let confetti = [];
+        let draggedTile = null;
+        let lineCompleted = false;
+
+        function initLine(lineIndex) {
+            currentLineIndex = lineIndex;
+            lineCompleted = false;
+            const lyricData = lyrics[lineIndex];
+
+            // Create slots
+            slots = [];
+            for (let i = 0; i < lyricData.tiles.length; i++) {
+                slots.push(new Slot(i, lyricData.tiles.length));
+            }
+
+            // Create tiles (shuffled)
+            tiles = [];
+            const shuffled = [...lyricData.tiles].sort(() => Math.random() - 0.5);
+
+            // BUG FIX 1: Track original tile indices to handle duplicates correctly
+            const takenOriginalIndices = [];
+            shuffled.forEach((text, i) => {
+                let originalIndex = -1;
+                for (let j = 0; j < lyricData.tiles.length; j++) {
+                    if (lyricData.tiles[j] === text && !takenOriginalIndices.includes(j)) {
+                        originalIndex = j;
+                        takenOriginalIndices.push(j);
+                        break;
+                    }
+                }
+                const tile = new Tile(text, i, shuffled.length);
+                tile.correctSlotIndex = originalIndex;
+                tiles.push(tile);
+            });
+
+            // Improve slot sizing: dynamically set slot width based on tile text
+            for (let i = 0; i < slots.length; i++) {
+                const tileText = lyricData.tiles[i];
+                const estimatedWidth = tileText.length * 12 + 24;
+                slots[i].width = Math.max(estimatedWidth, 80);
+            }
+
+            document.getElementById('current-line').textContent = lineIndex + 1;
+        }
+
+        function checkLineComplete() {
+            return slots.every(slot => slot.occupied);
+        }
+
+        function completeLineWithFeedback() {
+            if (lineCompleted) return;
+            lineCompleted = true;
+
+            // Create confetti
+            for (let i = 0; i < 30; i++) {
+                const slot = slots[i % slots.length];
+                confetti.push(new Confetti(slot.x, slot.y));
+            }
+
+            // Delay next line
+            setTimeout(() => {
+                if (currentLineIndex < lyrics.length - 1) {
+                    initLine(currentLineIndex + 1);
+                } else {
+                    // Game complete!
+                    gameComplete = true;
+                    showCompletion();
+                }
+            }, 1500);
+        }
+
+        function showCompletion() {
+            document.getElementById('completion-lyrics').textContent = allLyrics;
+            document.getElementById('completion').classList.add('show');
+        }
+
+        function getTouchPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            // BUG FIX 2: Handle touchend where e.touches is empty by using changedTouches
+            const touch = (e.touches && e.touches.length > 0) ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : e);
+            return {
+                x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+                y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (gameComplete) return;
+            const pos = getTouchPos(e);
+
+            for (let i = tiles.length - 1; i >= 0; i--) {
+                if (tiles[i].contains(pos.x, pos.y) && !tiles[i].isPlaced) {
+                    draggedTile = tiles[i];
+                    draggedTile.isDragging = true;
+                    draggedTile.targetScale = 1.08;
+                    draggedTile.dragOffsetX = pos.x - draggedTile.x;
+                    draggedTile.dragOffsetY = pos.y - draggedTile.y;
+                    break;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (draggedTile && !gameComplete) {
+                const pos = getTouchPos(e);
+                draggedTile.x = pos.x - draggedTile.dragOffsetX;
+                draggedTile.y = pos.y - draggedTile.dragOffsetY;
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (draggedTile && !gameComplete) {
+                draggedTile.isDragging = false;
+                draggedTile.targetScale = 1;
+
+                let placed = false;
+
+                // Check if near a slot
+                // BUG FIX 3: Use tile's current position instead of finger position for snap distance
+                for (let slot of slots) {
+                    const dx = draggedTile.x - slot.x;
+                    const dy = draggedTile.y - slot.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 80 && !slot.occupied) {
+                        // Check if correct (using correctSlotIndex, not shuffled index)
+                        if (draggedTile.correctSlotIndex === slot.index) {
+                            draggedTile.isPlaced = true;
+                            draggedTile.x = slot.x;
+                            draggedTile.y = slot.y;
+                            draggedTile.currentSlotIndex = slot.index;
+                            slot.occupied = true;
+                            slot.tileIndex = tiles.indexOf(draggedTile);
+                            placed = true;
+
+                            // Add floating notes
+                            for (let i = 0; i < 3; i++) {
+                                floatingNotes.push(new FloatingNote());
+                            }
+
+                            if (checkLineComplete()) {
+                                completeLineWithFeedback();
+                            }
+                        } else {
+                            // Wrong slot - bounce back
+                            draggedTile.feedbackTimer = 150;
+                            draggedTile.feedbackType = 'wrong';
+                        }
+                        break;
+                    }
+                }
+
+                draggedTile = null;
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameComplete) return;
+            e.preventDefault();
+            const pos = getTouchPos(e);
+
+            for (let i = tiles.length - 1; i >= 0; i--) {
+                if (tiles[i].contains(pos.x, pos.y) && !tiles[i].isPlaced) {
+                    draggedTile = tiles[i];
+                    draggedTile.isDragging = true;
+                    draggedTile.targetScale = 1.08;
+                    draggedTile.dragOffsetX = pos.x - draggedTile.x;
+                    draggedTile.dragOffsetY = pos.y - draggedTile.y;
+                    break;
+                }
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (draggedTile && !gameComplete) {
+                e.preventDefault();
+                const pos = getTouchPos(e);
+                draggedTile.x = pos.x - draggedTile.dragOffsetX;
+                draggedTile.y = pos.y - draggedTile.dragOffsetY;
+            }
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (draggedTile && !gameComplete) {
+                e.preventDefault();
+                draggedTile.isDragging = false;
+                draggedTile.targetScale = 1;
+
+                let placed = false;
+
+                for (let slot of slots) {
+                    // BUG FIX 3: Use tile's current position instead of finger position for snap distance
+                    const dx = draggedTile.x - slot.x;
+                    const dy = draggedTile.y - slot.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 80 && !slot.occupied) {
+                        // Check if correct (using correctSlotIndex, not shuffled index)
+                        if (draggedTile.correctSlotIndex === slot.index) {
+                            draggedTile.isPlaced = true;
+                            draggedTile.x = slot.x;
+                            draggedTile.y = slot.y;
+                            draggedTile.currentSlotIndex = slot.index;
+                            slot.occupied = true;
+                            slot.tileIndex = tiles.indexOf(draggedTile);
+                            placed = true;
+
+                            for (let i = 0; i < 3; i++) {
+                                floatingNotes.push(new FloatingNote());
+                            }
+
+                            if (checkLineComplete()) {
+                                completeLineWithFeedback();
+                            }
+                        } else {
+                            draggedTile.feedbackTimer = 150;
+                            draggedTile.feedbackType = 'wrong';
+                        }
+                        break;
+                    }
+                }
+
+                draggedTile = null;
+            }
+        });
+
+        // Initialize first line
+        initLine(0);
+
+        // Animation loop
+        function animate() {
+            // Clear with gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#1a1f3a');
+            gradient.addColorStop(0.5, '#2d1b4e');
+            gradient.addColorStop(1, '#1a1a2e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw floating music notes
+            floatingNotes.forEach((note, i) => {
+                note.update();
+                note.draw();
+                if (note.isDead()) {
+                    floatingNotes.splice(i, 1);
+                }
+            });
+
+            // Draw slots
+            slots.forEach(slot => {
+                slot.draw();
+            });
+
+            // Draw tiles
+            tiles.forEach(tile => {
+                tile.update();
+                tile.draw();
+            });
+
+            // Draw confetti
+            confetti.forEach((particle, i) => {
+                particle.update();
+                particle.draw();
+                if (particle.isDead()) {
+                    confetti.splice(i, 1);
+                }
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>`;
+
+// ─────────────────────────────────────────────
+// 22-constellation
+// ─────────────────────────────────────────────
+export const PREFAB_CONSTELLATION = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>连星座 — Glint Lockscreen Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #0a0e27;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1428 100%);
+        }
+
+        .ui-footer {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 2px;
+            font-weight: 300;
+            pointer-events: none;
+        }
+
+        .counter {
+            position: fixed;
+            top: 40px;
+            right: 30px;
+            font-size: 14px;
+            color: rgba(255, 215, 100, 0.8);
+            font-weight: 300;
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+
+        .instruction {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 1px;
+            pointer-events: none;
+            opacity: 0;
+            animation: fadeInOut 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="counter" id="counter">已连 0 颗星</div>
+    <div class="instruction">轻点或拖拽在星星之间画线</div>
+    <div class="ui-footer">GLINT · 画你的星座</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let animationFrameId = null;
+
+        // Resize canvas to fill window
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // ==================== Star Data ====================
+        const stars = [];
+        const constellations = [];
+        const shootingStars = [];
+        const connectedStarCount = { value: 0 };
+
+        const STAR_COUNT = 45;
+        const BRIGHT_STAR_COUNT = 6;
+        const ACTIVATION_RADIUS = 30;
+        const CONSTELLATION_NAMES = ['北辰', '织女', '归途', '初心', '远方', '沙漠', '灯塔', '月下', '星河', '永恒'];
+
+        // Initialize stars
+        function initStars() {
+            stars.length = 0;
+            for (let i = 0; i < STAR_COUNT; i++) {
+                const isBright = i < BRIGHT_STAR_COUNT;
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: isBright ? 6 + Math.random() * 2 : 2 + Math.random() * 3,
+                    brightness: 0.5 + Math.random() * 0.5,
+                    twinklePhase: Math.random() * Math.PI * 2,
+                    twinkleSpeed: 0.01 + Math.random() * 0.02,
+                    isBright: isBright,
+                    isActivated: false,
+                    connections: [],
+                    pulsePhase: 0
+                });
+            }
+        }
+        initStars();
+
+        // ==================== Input Handling ====================
+        let currentStar = null;
+        let isDrawing = false;
+        let mouseX = 0;
+        let mouseY = 0;
+
+        function getStarAtPosition(x, y) {
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const star = stars[i];
+                const dist = Math.hypot(star.x - x, star.y - y);
+                if (dist < ACTIVATION_RADIUS) {
+                    return star;
+                }
+            }
+            return null;
+        }
+
+        function onPointerDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            mouseX = x;
+            mouseY = y;
+
+            const star = getStarAtPosition(x, y);
+            if (star) {
+                currentStar = star;
+                isDrawing = true;
+                star.isActivated = true;
+            }
+        }
+
+        function onPointerMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+
+            if (!isDrawing) {
+                // Update activation state for nearby stars
+                stars.forEach(star => {
+                    const dist = Math.hypot(star.x - mouseX, star.y - mouseY);
+                    star.isActivated = dist < ACTIVATION_RADIUS;
+                });
+            }
+        }
+
+        function onPointerUp(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (isDrawing && currentStar) {
+                const targetStar = getStarAtPosition(x, y);
+
+                if (targetStar && targetStar !== currentStar) {
+                    // Create connection
+                    const startIdx = stars.indexOf(currentStar);
+                    const endIdx = stars.indexOf(targetStar);
+
+                    if (startIdx !== -1 && endIdx !== -1) {
+                        // Avoid duplicates
+                        if (!currentStar.connections.includes(endIdx)) {
+                            currentStar.connections.push(endIdx);
+                        }
+                        if (!targetStar.connections.includes(startIdx)) {
+                            targetStar.connections.push(startIdx);
+                        }
+
+                        connectedStarCount.value = countConnectedStars();
+                        checkForConstellations();
+                    }
+                } else if (!targetStar) {
+                    // Create shooting star at click position
+                    createShootingStar(currentStar.x, currentStar.y, x, y);
+                }
+            }
+
+            isDrawing = false;
+            currentStar = null;
+            stars.forEach(star => star.isActivated = false);
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        canvas.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            onPointerDown(touch);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            onPointerMove(touch);
+        });
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            onPointerUp(touch);
+        });
+
+        // ==================== Shooting Star ====================
+        function createShootingStar(fromX, fromY, toX, toY) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            const speed = 8;
+            shootingStars.push({
+                x: fromX,
+                y: fromY,
+                angle: angle,
+                speed: speed,
+                length: 60,
+                life: 1.0,
+                decay: 0.02
+            });
+        }
+
+        // ==================== Constellation Detection ====================
+        function countConnectedStars() {
+            const visited = new Set();
+            stars.forEach((star, idx) => {
+                if (star.connections.length > 0) {
+                    visited.add(idx);
+                }
+            });
+            return visited.size;
+        }
+
+        function checkForConstellations() {
+            // Find all connected components with 3+ stars
+            const visited = new Set();
+            const newConstellations = [];
+
+            function dfs(startIdx, component) {
+                if (visited.has(startIdx)) return;
+                visited.add(startIdx);
+                component.push(startIdx);
+
+                const star = stars[startIdx];
+                star.connections.forEach(connIdx => {
+                    dfs(connIdx, component);
+                });
+            }
+
+            for (let i = 0; i < stars.length; i++) {
+                if (!visited.has(i) && stars[i].connections.length > 0) {
+                    const component = [];
+                    dfs(i, component);
+                    if (component.length >= 3) {
+                        newConstellations.push({
+                            starIndices: component,
+                            name: CONSTELLATION_NAMES[Math.floor(Math.random() * CONSTELLATION_NAMES.length)],
+                            created: Date.now(),
+                            pulsePhase: 0
+                        });
+                    }
+                }
+            }
+
+            // Add only new constellations
+            newConstellations.forEach(newConst => {
+                const isDuplicate = constellations.some(existing => {
+                    const existingSet = new Set(existing.starIndices);
+                    const newSet = new Set(newConst.starIndices);
+                    return existingSet.size === newSet.size &&
+                           [...existingSet].every(v => newSet.has(v));
+                });
+                if (!isDuplicate) {
+                    constellations.push(newConst);
+                }
+            });
+        }
+
+        // ==================== Drawing ====================
+        function drawNebula() {
+            const gradient = ctx.createRadialGradient(
+                canvas.width * 0.8, canvas.height * 0.2, 0,
+                canvas.width * 0.8, canvas.height * 0.2, canvas.width * 0.6
+            );
+            gradient.addColorStop(0, 'rgba(138, 43, 226, 0.15)');
+            gradient.addColorStop(0.5, 'rgba(75, 0, 130, 0.08)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawStar(star, time) {
+            const dx = star.x;
+            const dy = star.y;
+            const size = star.size;
+
+            // Twinkling
+            const twinkling = 0.5 + 0.5 * Math.sin(star.twinklePhase + time * star.twinkleSpeed);
+            let opacity = star.brightness * twinkling;
+
+            // Activation pulse
+            if (star.isActivated) {
+                opacity = Math.min(1, opacity + 0.3);
+            }
+
+            // Draw glow
+            const glowGradient = ctx.createRadialGradient(dx, dy, 0, dx, dy, size * 3);
+            glowGradient.addColorStop(0, \`rgba(255, 215, 100, \${opacity * 0.6})\`);
+            glowGradient.addColorStop(1, 'rgba(255, 215, 100, 0)');
+            ctx.fillStyle = glowGradient;
+            ctx.beginPath();
+            ctx.arc(dx, dy, size * 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw core
+            ctx.fillStyle = \`rgba(255, 240, 200, \${opacity})\`;
+            ctx.beginPath();
+            ctx.arc(dx, dy, size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw bright star sparkle
+            if (star.isBright) {
+                const sparkleSize = size * 0.5;
+                ctx.strokeStyle = \`rgba(255, 250, 220, \${opacity * 0.8})\`;
+                ctx.lineWidth = 1;
+
+                // Horizontal line
+                ctx.beginPath();
+                ctx.moveTo(dx - size * 2.5, dy);
+                ctx.lineTo(dx + size * 2.5, dy);
+                ctx.stroke();
+
+                // Vertical line
+                ctx.beginPath();
+                ctx.moveTo(dx, dy - size * 2.5);
+                ctx.lineTo(dx, dy + size * 2.5);
+                ctx.stroke();
+
+                // Diagonal lines
+                ctx.beginPath();
+                ctx.moveTo(dx - size * 1.8, dy - size * 1.8);
+                ctx.lineTo(dx + size * 1.8, dy + size * 1.8);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(dx + size * 1.8, dy - size * 1.8);
+                ctx.lineTo(dx - size * 1.8, dy + size * 1.8);
+                ctx.stroke();
+            }
+        }
+
+        function drawConnections(time) {
+            ctx.lineWidth = 1;
+
+            stars.forEach((star, idx) => {
+                star.connections.forEach(connIdx => {
+                    if (connIdx > idx) { // Draw each line only once
+                        const target = stars[connIdx];
+                        const dist = Math.hypot(target.x - star.x, target.y - star.y);
+
+                        // Glow line (thick, transparent)
+                        ctx.strokeStyle = 'rgba(255, 215, 100, 0.15)';
+                        ctx.lineWidth = 6;
+                        ctx.beginPath();
+                        ctx.moveTo(star.x, star.y);
+                        ctx.lineTo(target.x, target.y);
+                        ctx.stroke();
+
+                        // Bright line
+                        ctx.strokeStyle = 'rgba(255, 240, 180, 0.8)';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(star.x, star.y);
+                        ctx.lineTo(target.x, target.y);
+                        ctx.stroke();
+                    }
+                });
+            });
+        }
+
+        function drawPreviewLine() {
+            if (isDrawing && currentStar) {
+                const dist = Math.hypot(mouseX - currentStar.x, mouseY - currentStar.y);
+
+                // Glow
+                ctx.strokeStyle = 'rgba(255, 215, 100, 0.2)';
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.moveTo(currentStar.x, currentStar.y);
+                ctx.lineTo(mouseX, mouseY);
+                ctx.stroke();
+
+                // Bright preview
+                ctx.strokeStyle = 'rgba(255, 240, 180, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(currentStar.x, currentStar.y);
+                ctx.lineTo(mouseX, mouseY);
+                ctx.stroke();
+            }
+        }
+
+        function drawShootingStars(time) {
+            shootingStars.forEach((ss, idx) => {
+                if (ss.life <= 0) {
+                    shootingStars.splice(idx, 1);
+                    return;
+                }
+
+                const trailLength = ss.length * ss.life;
+                const endX = ss.x + Math.cos(ss.angle) * ss.speed * 60;
+                const endY = ss.y + Math.sin(ss.angle) * ss.speed * 60;
+
+                // Trail glow
+                const gradient = ctx.createLinearGradient(ss.x, ss.y, endX, endY);
+                gradient.addColorStop(0, \`rgba(255, 215, 100, \${ss.life * 0.8})\`);
+                gradient.addColorStop(1, 'rgba(255, 215, 100, 0)');
+
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(ss.x, ss.y);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                // Bright core
+                ctx.strokeStyle = \`rgba(255, 250, 220, \${ss.life})\`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(ss.x, ss.y);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                ss.life -= ss.decay;
+            });
+        }
+
+        function drawConstellationLabels(time) {
+            constellations.forEach(const_obj => {
+                const ageMs = Date.now() - const_obj.created;
+                if (ageMs > 8000) return; // Fade out after 8 seconds
+
+                // Calculate label position (center of stars)
+                let centerX = 0, centerY = 0;
+                const_obj.starIndices.forEach(idx => {
+                    centerX += stars[idx].x;
+                    centerY += stars[idx].y;
+                });
+                centerX /= const_obj.starIndices.length;
+                centerY /= const_obj.starIndices.length;
+
+                // Pulse and fade
+                const progress = ageMs / 8000;
+                const opacity = Math.max(0, 1 - progress) * 0.8;
+                const scale = 1 + Math.sin(time * 0.003) * 0.1;
+
+                ctx.fillStyle = \`rgba(255, 215, 100, \${opacity})\`;
+                ctx.font = \`\${14 * scale}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto\`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(const_obj.name, centerX, centerY - 30);
+            });
+
+            // Remove old constellations
+            constellations.forEach((const_obj, idx) => {
+                if (Date.now() - const_obj.created > 8000) {
+                    constellations.splice(idx, 1);
+                }
+            });
+        }
+
+        // ==================== Animation Loop ====================
+        let lastTime = Date.now();
+        function animate() {
+            const now = Date.now();
+            const time = now - lastTime;
+
+            // Clear canvas with gradient background
+            const bgGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            bgGradient.addColorStop(0, '#0a0e27');
+            bgGradient.addColorStop(0.5, '#1a1f3a');
+            bgGradient.addColorStop(1, '#0f1428');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw nebula
+            drawNebula();
+
+            // Draw all stars
+            stars.forEach(star => drawStar(star, now));
+
+            // Draw connections
+            drawConnections(now);
+
+            // Draw preview line
+            drawPreviewLine();
+
+            // Draw shooting stars
+            drawShootingStars(now);
+
+            // Draw constellation labels
+            drawConstellationLabels(now);
+
+            // Update counter
+            const counter = document.getElementById('counter');
+            counter.textContent = \`已连 \${connectedStarCount.value} 颗星\`;
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        });
+    </script>
+</body>
+</html>`;
+
+// ─────────────────────────────────────────────
+// 23-space-shooter
+// ─────────────────────────────────────────────
+export const PREFAB_SPACE_SHOOTER = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>星际守卫 - Space Guardian</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #0a0a12;
+      font-family: 'Courier New', monospace;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      position: fixed;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #0a0a12;
+    }
+
+    .hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      font-size: 14px;
+      color: #00ffff;
+      text-shadow: 0 0 12px rgba(0, 255, 255, 0.6), 0 0 24px rgba(0, 255, 255, 0.2);
+      font-weight: bold;
+      z-index: 10;
+    }
+
+    .lives {
+      display: flex;
+      gap: 6px;
+      font-size: 18px;
+      letter-spacing: 4px;
+    }
+
+    .score {
+      letter-spacing: 3px;
+      font-size: 16px;
+    }
+
+    .combo {
+      letter-spacing: 2px;
+      font-size: 14px;
+      color: #ffff00;
+      text-shadow: 0 0 10px rgba(255, 255, 0, 0.6);
+      margin-right: 20px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .combo.active {
+      opacity: 1;
+    }
+
+    .wave {
+      letter-spacing: 2px;
+      font-size: 14px;
+      color: #ff00ff;
+      text-shadow: 0 0 10px rgba(255, 0, 255, 0.6);
+    }
+
+    .glint-footer {
+      position: absolute;
+      bottom: 4px;
+      right: 12px;
+      font-size: 10px;
+      color: rgba(0, 255, 255, 0.15);
+      letter-spacing: 1px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div class="hud">
+    <div>
+      <div class="lives" id="lives"></div>
+    </div>
+    <div style="display: flex; gap: 30px;">
+      <div class="wave" id="wave">WAVE 1</div>
+      <div class="combo" id="combo"></div>
+      <div class="score" id="score">SCORE 0000</div>
+    </div>
+  </div>
+  <div class="glint-footer">GLINT</div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const livesEl = document.getElementById('lives');
+    const scoreEl = document.getElementById('score');
+    const waveEl = document.getElementById('wave');
+    const comboEl = document.getElementById('combo');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Game state
+    const game = {
+      score: 0,
+      lives: 3,
+      gameOver: false,
+      waveStartTime: 0,
+      waveNum: 1,
+      elapsedTime: 0,
+      killCount: 0,
+      lastKillTime: 0,
+      comboCount: 0,
+      maxCombo: 0,
+      powerUpActive: null,
+      powerUpEndTime: 0,
+      screenShake: 0,
+      gameStartTime: 0,
+    };
+
+    // Player ship
+    const player = {
+      x: canvas.width / 2,
+      y: canvas.height * 0.85,
+      speed: 6,
+      lastFireTime: 0,
+      fireRate: 100,
+      shieldActive: false,
+    };
+
+    // Input handling
+    const input = {
+      touchActive: false,
+      touchX: 0,
+      mouseX: canvas.width / 2,
+    };
+
+    canvas.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const y = touch.clientY - rect.top;
+      if (y > canvas.height * 0.67) {
+        input.touchActive = true;
+        input.touchX = touch.clientX - rect.left;
+      }
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (input.touchActive) {
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        input.touchX = touch.clientX - rect.left;
+      }
+    });
+
+    canvas.addEventListener('touchend', () => {
+      input.touchActive = false;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      if (y > canvas.height * 0.67) {
+        input.mouseX = e.clientX - rect.left;
+      }
+    });
+
+    // Object pools
+    const bullets = [];
+    const enemies = [];
+    const particles = [];
+    const scorePopups = [];
+    const waveAnnouncements = [];
+
+    // Particle system
+    function createExplosion(x, y, size = 1, color = '#00ffff') {
+      const rings = Math.ceil(size * 3);
+      for (let r = 0; r < rings; r++) {
+        const particleCount = 8 + r * 4;
+        for (let i = 0; i < particleCount; i++) {
+          const angle = (i / particleCount) * Math.PI * 2 + (Math.random() - 0.5);
+          const speed = 2 + Math.random() * 4 + r * 0.5;
+          particles.push({
+            x, y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 0.8,
+            maxLife: 0.8,
+            color,
+            size: 1.5 + Math.random() * 1.5,
+          });
+        }
+      }
+    }
+
+    function createScorePopup(x, y, text) {
+      scorePopups.push({ x, y, text, life: 1.5, maxLife: 1.5 });
+    }
+
+    function createWaveAnnouncement(waveNum) {
+      waveAnnouncements.push({
+        waveNum,
+        life: 2,
+        maxLife: 2,
+        scale: 0.5,
+      });
+    }
+
+    // Bullet system
+    function fireBullet() {
+      const now = Date.now();
+      if (now - player.lastFireTime < player.fireRate) return;
+      player.lastFireTime = now;
+
+      if (game.powerUpActive === 'triple') {
+        const spread = 12;
+        for (let i = -1; i <= 1; i++) {
+          bullets.push({
+            x: player.x + i * spread,
+            y: player.y - 15,
+            vx: i * 2,
+            vy: -9,
+            life: 5,
+            type: 'triple',
+          });
+        }
+      } else {
+        bullets.push({
+          x: player.x,
+          y: player.y - 15,
+          vx: 0,
+          vy: -9,
+          life: 5,
+          type: 'single',
+        });
+      }
+    }
+
+    // Enemy spawning
+    function spawnEnemy() {
+      if (!game.lastSpawnTime) game.lastSpawnTime = Date.now();
+
+      const waveTime = game.elapsedTime;
+      const now = Date.now();
+
+      let spawnRate = 1200;
+      let enemyCount = 1;
+      let speed = 1.8;
+      let types = [0];
+
+      if (waveTime > 45) {
+        game.waveNum = 4;
+        spawnRate = 600;
+        enemyCount = 4;
+        speed = 3.2;
+        types = [0, 1, 2, 3];
+      } else if (waveTime > 30) {
+        game.waveNum = 3;
+        spawnRate = 800;
+        enemyCount = 3;
+        speed = 2.8;
+        types = [0, 1, 2];
+      } else if (waveTime > 15) {
+        game.waveNum = 2;
+        spawnRate = 1000;
+        enemyCount = 2;
+        speed = 2.2;
+        types = [0, 1];
+      }
+
+      // Occasional boss
+      if (waveTime > 25 && Math.floor(waveTime) % 30 === 0 && now - game.lastBossTime > 25000) {
+        game.lastBossTime = now;
+        enemies.push({
+          x: canvas.width / 2 + (Math.random() - 0.5) * 100,
+          y: -60,
+          vx: 0,
+          vy: 1.2,
+          type: 'boss',
+          health: 8,
+          maxHealth: 8,
+          angle: 0,
+          rotation: 0,
+          shieldRotation: 0,
+          shieldAlpha: 0.8,
+        });
+        return;
+      }
+
+      if (now - game.lastSpawnTime > spawnRate) {
+        game.lastSpawnTime = now;
+        for (let i = 0; i < enemyCount; i++) {
+          const type = types[i % types.length];
+          enemies.push({
+            x: Math.random() * (canvas.width - 60) + 30,
+            y: -40,
+            type,
+            vy: speed,
+            vx: (i % 2 === 0 ? -0.6 : 0.6) * speed,
+            health: type === 'boss' ? 5 : 1,
+            maxHealth: type === 'boss' ? 5 : 1,
+            angle: 0,
+            rotation: Math.random() * Math.PI * 2,
+            pulsing: 0,
+          });
+        }
+      }
+    }
+
+    function spawnPowerUp(x, y) {
+      const types = ['triple', 'shield'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      const powerUp = {
+        x, y,
+        type,
+        vy: 1.5,
+        life: 8,
+        rotation: 0,
+      };
+      particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 3,
+        vy: -2 - Math.random() * 2,
+        life: 1,
+        maxLife: 1,
+        color: '#0099ff',
+        size: 2,
+        isTrail: true,
+      });
+      game.powerUps = game.powerUps || [];
+      game.powerUps.push(powerUp);
+    }
+
+    // Collision detection
+    function checkCollisions() {
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const bullet = bullets[i];
+        for (let j = enemies.length - 1; j >= 0; j--) {
+          const enemy = enemies[j];
+          const dx = bullet.x - enemy.x;
+          const dy = bullet.y - enemy.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const radius = enemy.type === 'boss' ? 28 : 16;
+
+          if (dist < radius + 5) {
+            enemy.health--;
+            const killScore = enemy.type === 'boss' ? 50 : 10;
+            game.score += killScore * (1 + Math.floor(game.comboCount / 2));
+            game.killCount++;
+            game.lastKillTime = Date.now();
+            game.comboCount++;
+            if (game.comboCount > game.maxCombo) game.maxCombo = game.comboCount;
+
+            createScorePopup(enemy.x, enemy.y, \`+\${killScore}\`);
+
+            if (enemy.type === 'boss') {
+              game.screenShake = 15;
+              createExplosion(enemy.x, enemy.y, 3, '#ffff00');
+            } else {
+              game.screenShake = Math.max(1, game.screenShake + 1);
+              createExplosion(enemy.x, enemy.y, 1.5, ['#ff00ff', '#00ff00', '#ff8800', '#0099ff'][enemy.type]);
+            }
+
+            if (enemy.health <= 0) {
+              if (Math.random() < 0.08) {
+                spawnPowerUp(enemy.x, enemy.y);
+              }
+              enemies.splice(j, 1);
+            }
+
+            bullets.splice(i, 1);
+            break;
+          }
+        }
+      }
+
+      // Power-up collection
+      if (game.powerUps) {
+        for (let i = game.powerUps.length - 1; i >= 0; i--) {
+          const pu = game.powerUps[i];
+          const dx = player.x - pu.x;
+          const dy = player.y - pu.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 25) {
+            if (pu.type === 'triple') {
+              game.powerUpActive = 'triple';
+              game.powerUpEndTime = Date.now() + 6000;
+            } else if (pu.type === 'shield') {
+              player.shieldActive = true;
+              game.shieldEndTime = Date.now() + 5000;
+            }
+            game.powerUps.splice(i, 1);
+          }
+        }
+      }
+
+      // Enemy-player collision
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+        const dx = player.x - enemy.x;
+        const dy = player.y - enemy.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 25) {
+          if (player.shieldActive) {
+            player.shieldActive = false;
+            createExplosion(player.x, player.y, 2, '#0099ff');
+            game.screenShake = 8;
+          } else {
+            game.lives--;
+            createExplosion(player.x, player.y, 2, '#ff0000');
+            game.screenShake = 10;
+            if (game.lives <= 0) {
+              game.gameOver = true;
+            }
+          }
+          enemies.splice(i, 1);
+        }
+      }
+    }
+
+    // Update loop
+    function update() {
+      if (game.gameOver) return;
+
+      if (!game.gameStartTime) game.gameStartTime = Date.now();
+      game.elapsedTime = (Date.now() - game.waveStartTime) / 1000;
+
+      // Player movement
+      const targetX = input.touchActive ? input.touchX : input.mouseX;
+      const moveDir = targetX - player.x;
+      if (Math.abs(moveDir) > 2) {
+        player.x += Math.sign(moveDir) * player.speed;
+      }
+      player.x = Math.max(25, Math.min(canvas.width - 25, player.x));
+
+      // Auto-fire
+      fireBullet();
+
+      // Spawn enemies
+      spawnEnemy();
+
+      // Update bullets
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx;
+        b.y += b.vy;
+        b.life -= 0.016;
+        if (b.y < -10 || b.x < -10 || b.x > canvas.width + 10 || b.life <= 0) {
+          bullets.splice(i, 1);
+        }
+      }
+
+      // Update enemies
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        if (e.type === 'boss') {
+          e.angle += 0.02;
+          e.rotation += 0.015;
+          e.shieldRotation += 0.03;
+          e.pulsing = Math.sin(Date.now() * 0.005) * 0.3 + 0.7;
+        } else {
+          e.rotation += 0.05;
+          e.pulsing = Math.sin(Date.now() * 0.008 + e.x) * 0.2 + 0.8;
+        }
+
+        e.x += e.vx;
+        e.y += e.vy;
+
+        if (e.y > canvas.height) {
+          game.lives--;
+          enemies.splice(i, 1);
+          if (game.lives <= 0) game.gameOver = true;
+        }
+      }
+
+      // Update particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.15;
+        p.life -= 0.016;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+
+      // Update power-ups
+      if (game.powerUps) {
+        for (let i = game.powerUps.length - 1; i >= 0; i--) {
+          const pu = game.powerUps[i];
+          pu.y += pu.vy;
+          pu.rotation += 0.08;
+          pu.life -= 0.016;
+          if (pu.y > canvas.height || pu.life <= 0) {
+            game.powerUps.splice(i, 1);
+          }
+        }
+      }
+
+      // Update announcements
+      for (let i = waveAnnouncements.length - 1; i >= 0; i--) {
+        const a = waveAnnouncements[i];
+        a.life -= 0.016;
+        a.scale = 0.3 + (1 - a.life / a.maxLife) * 1.2;
+        if (a.life <= 0) waveAnnouncements.splice(i, 1);
+      }
+
+      // Update score popups
+      for (let i = scorePopups.length - 1; i >= 0; i--) {
+        const sp = scorePopups[i];
+        sp.y -= 1.5;
+        sp.life -= 0.016;
+        if (sp.life <= 0) scorePopups.splice(i, 1);
+      }
+
+      // Power-up expiration
+      if (game.powerUpActive && Date.now() > game.powerUpEndTime) {
+        game.powerUpActive = null;
+      }
+      if (player.shieldActive && Date.now() > game.shieldEndTime) {
+        player.shieldActive = false;
+      }
+
+      // Combo reset
+      if (Date.now() - game.lastKillTime > 2000) {
+        game.comboCount = 0;
+      }
+
+      // Screen shake decay
+      if (game.screenShake > 0) {
+        game.screenShake *= 0.92;
+      }
+
+      checkCollisions();
+    }
+
+    // Drawing functions
+    function drawBackground() {
+      ctx.fillStyle = '#0a0a12';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (!game.starfield) {
+        game.starfield = [];
+        for (let i = 0; i < 40; i++) {
+          game.starfield.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 1.5,
+            speed: 0.1 + Math.random() * 0.3,
+            brightness: 0.3 + Math.random() * 0.7,
+          });
+        }
+        for (let i = 0; i < 20; i++) {
+          game.starfield.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 0.8,
+            speed: 0.02 + Math.random() * 0.08,
+            brightness: 0.2 + Math.random() * 0.4,
+          });
+        }
+      }
+
+      // Parallax scrolling stars
+      for (const star of game.starfield) {
+        star.y = (star.y + star.speed) % canvas.height;
+        ctx.fillStyle = \`rgba(100, 150, 255, \${star.brightness})\`;
+        ctx.globalAlpha = star.brightness;
+        ctx.fillRect(star.x, star.y, star.size, star.size);
+      }
+
+      // Nebula clouds
+      if (!game.nebulaClouds) {
+        game.nebulaClouds = [
+          { x: canvas.width * 0.2, y: canvas.height * 0.1, color: '#4400ff' },
+          { x: canvas.width * 0.8, y: canvas.height * 0.3, color: '#ff0044' },
+          { x: canvas.width * 0.5, y: canvas.height * 0.5, color: '#0044ff' },
+        ];
+      }
+
+      for (const nebula of game.nebulaClouds) {
+        const pulse = Math.sin(Date.now() * 0.0005) * 0.3 + 0.3;
+        ctx.fillStyle = nebula.color;
+        ctx.globalAlpha = pulse * 0.15;
+        ctx.beginPath();
+        ctx.arc(nebula.x, nebula.y, 120, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
+    }
+
+    function drawPlayer() {
+      ctx.save();
+      const shakeX = (Math.random() - 0.5) * game.screenShake;
+      const shakeY = (Math.random() - 0.5) * game.screenShake;
+      ctx.translate(player.x + shakeX, player.y + shakeY);
+
+      // Shield
+      if (player.shieldActive) {
+        ctx.strokeStyle = 'rgba(0, 153, 255, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = 'rgba(0, 153, 255, 0.6)';
+        ctx.shadowBlur = 20;
+        const shieldTime = Date.now() * 0.005;
+        for (let i = 0; i < 3; i++) {
+          const radius = 35 + i * 8 + Math.sin(shieldTime + i) * 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.shadowColor = 'transparent';
+      }
+
+      // Engine exhaust glow
+      ctx.shadowColor = 'rgba(255, 100, 0, 0.6)';
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = 'rgba(255, 150, 0, 0.4)';
+      const exhaustLen = 20 + Math.sin(Date.now() * 0.01) * 4;
+      ctx.beginPath();
+      ctx.ellipse(0, 20, 6, exhaustLen, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(255, 100, 0, 0.5)';
+      ctx.beginPath();
+      ctx.ellipse(0, 16, 4, exhaustLen - 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ship main body (sleek)
+      ctx.shadowColor = 'rgba(0, 255, 255, 0.8)';
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = '#00ffff';
+      ctx.beginPath();
+      ctx.moveTo(0, -18);
+      ctx.lineTo(-10, 8);
+      ctx.lineTo(-4, 12);
+      ctx.lineTo(4, 12);
+      ctx.lineTo(10, 8);
+      ctx.closePath();
+      ctx.fill();
+
+      // Cockpit glow
+      ctx.fillStyle = '#ffff99';
+      ctx.shadowColor = 'rgba(255, 255, 0, 0.8)';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(0, -12, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Wings detail
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(-10, -4);
+      ctx.lineTo(-14, -2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(10, -4);
+      ctx.lineTo(14, -2);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawBullets() {
+      for (const bullet of bullets) {
+        ctx.save();
+        ctx.translate(bullet.x, bullet.y);
+
+        const alpha = Math.min(1, bullet.life);
+        ctx.globalAlpha = alpha;
+
+        if (bullet.type === 'triple') {
+          ctx.shadowColor = 'rgba(0, 200, 255, 0.8)';
+          ctx.shadowBlur = 12;
+          ctx.fillStyle = '#00ffff';
+          ctx.beginPath();
+          ctx.arc(0, 0, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.shadowColor = 'rgba(0, 255, 255, 0.8)';
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = '#00ffff';
+          ctx.fillRect(-2.5, -5, 5, 10);
+        }
+
+        // Trail
+        ctx.globalAlpha = alpha * 0.4;
+        ctx.fillRect(-2.5, 8, 5, 10);
+        ctx.globalAlpha = alpha * 0.2;
+        ctx.fillRect(-2.5, 18, 5, 8);
+
+        ctx.restore();
+      }
+    }
+
+    function drawEnemies() {
+      for (const enemy of enemies) {
+        ctx.save();
+        ctx.translate(enemy.x, enemy.y);
+        ctx.rotate(enemy.rotation);
+
+        const colors = ['#ff00ff', '#00ff00', '#ff8800', '#ffaa00'];
+        const color = colors[enemy.type] || '#ff00ff';
+
+        if (enemy.type === 'boss') {
+          // Boss with rotating shield rings
+          ctx.globalAlpha = 0.3 + enemy.pulsing * 0.3;
+          ctx.strokeStyle = '#ffff00';
+          ctx.lineWidth = 2;
+          ctx.shadowColor = 'rgba(255, 255, 0, 0.6)';
+          ctx.shadowBlur = 15;
+
+          ctx.save();
+          ctx.rotate(enemy.shieldRotation);
+          for (let r = 1; r <= 3; r++) {
+            ctx.beginPath();
+            ctx.arc(0, 0, 15 + r * 10, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          ctx.globalAlpha = 1;
+
+          // Boss core
+          ctx.fillStyle = '#ffff00';
+          ctx.shadowColor = 'rgba(255, 255, 0, 0.9)';
+          ctx.shadowBlur = 20;
+          for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const x = Math.cos(angle) * 20;
+            const y = Math.sin(angle) * 20;
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Inner hexagon
+          ctx.fillStyle = '#ffff00';
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const x = Math.cos(angle) * 12;
+            const y = Math.sin(angle) * 12;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fill();
+
+          // Health bar
+          ctx.strokeStyle = '#ffff00';
+          ctx.lineWidth = 1;
+          ctx.globalAlpha = 0.6;
+          ctx.strokeRect(-28, -32, 56, 3);
+          ctx.fillStyle = '#ffff00';
+          ctx.fillRect(-28, -32, (enemy.health / enemy.maxHealth) * 56, 3);
+          ctx.globalAlpha = 1;
+        } else {
+          ctx.fillStyle = color;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 12;
+          ctx.globalAlpha = 0.5 + enemy.pulsing * 0.5;
+
+          // Different enemy designs
+          if (enemy.type === 0) {
+            // Triangle with spikes
+            ctx.beginPath();
+            ctx.moveTo(0, -14);
+            ctx.lineTo(-12, 12);
+            ctx.lineTo(12, 12);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.3;
+            ctx.beginPath();
+            ctx.moveTo(-4, 0);
+            ctx.lineTo(-8, 8);
+            ctx.lineTo(-2, 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(4, 0);
+            ctx.lineTo(8, 8);
+            ctx.lineTo(2, 6);
+            ctx.closePath();
+            ctx.fill();
+          } else if (enemy.type === 1) {
+            // Diamond with glow rings
+            ctx.beginPath();
+            ctx.moveTo(0, -14);
+            ctx.lineTo(14, 0);
+            ctx.lineTo(0, 14);
+            ctx.lineTo(-14, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.globalAlpha = 0.2 + enemy.pulsing * 0.2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (enemy.type === 2) {
+            // Hexagon with inner pattern
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+              const angle = (i / 6) * Math.PI * 2;
+              const x = Math.cos(angle) * 14;
+              const y = Math.sin(angle) * 14;
+              if (i === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.globalAlpha = 0.3;
+            ctx.beginPath();
+            ctx.arc(0, 0, 6, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (enemy.type === 3) {
+            // Star shape
+            ctx.beginPath();
+            for (let i = 0; i < 10; i++) {
+              const angle = (i / 10) * Math.PI * 2;
+              const radius = i % 2 === 0 ? 14 : 8;
+              const x = Math.cos(angle) * radius;
+              const y = Math.sin(angle) * radius;
+              if (i === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          ctx.globalAlpha = 1;
+        }
+
+        ctx.restore();
+      }
+    }
+
+    function drawParticles() {
+      for (const p of particles) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+
+        if (p.isTrail) {
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 8;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    function drawPowerUps() {
+      if (!game.powerUps) return;
+
+      for (const pu of game.powerUps) {
+        const alpha = pu.life / 8;
+        ctx.save();
+        ctx.translate(pu.x, pu.y);
+        ctx.rotate(pu.rotation);
+        ctx.globalAlpha = alpha;
+
+        if (pu.type === 'triple') {
+          ctx.shadowColor = 'rgba(0, 153, 255, 0.8)';
+          ctx.shadowBlur = 15;
+          ctx.fillStyle = '#0099ff';
+          ctx.beginPath();
+          for (let i = 0; i < 3; i++) {
+            const angle = (i / 3) * Math.PI * 2 - Math.PI / 2;
+            const x = Math.cos(angle) * 10;
+            const y = Math.sin(angle) * 10;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = '#00ffff';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(0, 0, 14, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          ctx.shadowColor = 'rgba(0, 255, 200, 0.8)';
+          ctx.shadowBlur = 15;
+          ctx.fillStyle = '#00ffc8';
+          ctx.beginPath();
+          ctx.arc(0, 0, 10, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.globalAlpha = alpha * 0.7;
+          for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
+            const x = Math.cos(angle) * 12;
+            const y = Math.sin(angle) * 12;
+            ctx.fillRect(x - 1, y - 1, 2, 2);
+          }
+        }
+
+        ctx.restore();
+      }
+    }
+
+    function drawAnnouncements() {
+      for (const a of waveAnnouncements) {
+        const alpha = Math.max(0, a.life / a.maxLife);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#ff00ff';
+        ctx.shadowColor = 'rgba(255, 0, 255, 0.8)';
+        ctx.shadowBlur = 25;
+        ctx.font = \`bold \${a.scale * 80}px Arial\`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(\`WAVE \${a.waveNum}\`, canvas.width / 2, canvas.height / 2);
+        ctx.restore();
+      }
+    }
+
+    function drawScorePopups() {
+      for (const sp of scorePopups) {
+        const alpha = sp.life / sp.maxLife;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#ffff00';
+        ctx.shadowColor = 'rgba(255, 255, 0, 0.8)';
+        ctx.shadowBlur = 10;
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(sp.text, sp.x, sp.y);
+        ctx.restore();
+      }
+    }
+
+    function drawHUD() {
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+
+      // Update HTML HUD
+      livesEl.innerHTML = '♡'.repeat(Math.max(0, game.lives));
+      scoreEl.textContent = 'SCORE ' + String(game.score).padStart(5, '0');
+      waveEl.textContent = \`WAVE \${game.waveNum}\`;
+
+      if (game.comboCount > 1) {
+        comboEl.classList.add('active');
+        comboEl.textContent = \`\${game.comboCount}x COMBO\`;
+      } else {
+        comboEl.classList.remove('active');
+      }
+
+      // Scanline effect
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.03)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < canvas.height; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+    }
+
+    function drawGameOver() {
+      const elapsed = Math.floor((Date.now() - game.gameStartTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#ff00ff';
+      ctx.shadowColor = 'rgba(255, 0, 255, 0.9)';
+      ctx.shadowBlur = 25;
+      ctx.font = 'bold 64px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 80);
+
+      ctx.fillStyle = '#00ffff';
+      ctx.shadowColor = 'rgba(0, 255, 255, 0.6)';
+      ctx.font = 'bold 28px Arial';
+      ctx.fillText(\`SCORE: \${String(game.score).padStart(6, '0')}\`, canvas.width / 2, canvas.height / 2 - 10);
+
+      ctx.font = '20px Arial';
+      ctx.fillStyle = '#ffff00';
+      ctx.shadowColor = 'rgba(255, 255, 0, 0.6)';
+      ctx.fillText(\`MAX COMBO: \${game.maxCombo}x\`, canvas.width / 2, canvas.height / 2 + 30);
+      ctx.fillText(\`TIME: \${minutes}:\${String(seconds).padStart(2, '0')}\`, canvas.width / 2, canvas.height / 2 + 60);
+
+      ctx.fillStyle = '#00ff00';
+      ctx.shadowColor = 'rgba(0, 255, 0, 0.6)';
+      ctx.font = 'bold 18px Arial';
+      ctx.fillText('TAP TO RESTART', canvas.width / 2, canvas.height / 2 + 120);
+    }
+
+    function render() {
+      drawBackground();
+      drawBullets();
+      drawEnemies();
+      drawParticles();
+      drawPowerUps();
+      drawPlayer();
+      drawAnnouncements();
+      drawScorePopups();
+      drawHUD();
+
+      if (game.gameOver) {
+        drawGameOver();
+      }
+    }
+
+    function gameLoop() {
+      update();
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+      game.score = 0;
+      game.lives = 3;
+      game.gameOver = false;
+      game.waveStartTime = Date.now();
+      game.waveNum = 1;
+      game.elapsedTime = 0;
+      game.killCount = 0;
+      game.lastKillTime = 0;
+      game.comboCount = 0;
+      game.maxCombo = 0;
+      game.powerUpActive = null;
+      game.lastSpawnTime = null;
+      game.lastBossTime = null;
+      game.powerUps = [];
+      game.screenShake = 0;
+      game.gameStartTime = null;
+
+      bullets.length = 0;
+      enemies.length = 0;
+      particles.length = 0;
+      scorePopups.length = 0;
+      waveAnnouncements.length = 0;
+
+      player.x = canvas.width / 2;
+      player.y = canvas.height * 0.85;
+      player.lastFireTime = 0;
+      player.shieldActive = false;
+
+      createWaveAnnouncement(1);
+      gameLoop();
+    }
+
+    canvas.addEventListener('click', () => {
+      if (game.gameOver) {
+        startGame();
+      }
+    });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (game.gameOver && !input.touchActive) {
+        startGame();
+      }
+    });
+
+    startGame();
+  </script>
+</body>
+</html>`;
