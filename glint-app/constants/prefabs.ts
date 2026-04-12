@@ -7,7 +7,7 @@
  */
 
 // ─────────────────────────────────────────────
-// 0. 开机首帧 — 粒子流场 + 触摸交互
+// 0. 开机首帧 — 漂浮玻璃便签 + 点击翻转
 // ─────────────────────────────────────────────
 export const PREFAB_AMBIENT_BOOT = `<!doctype html>
 <html><head>
@@ -15,168 +15,140 @@ export const PREFAB_AMBIENT_BOOT = `<!doctype html>
 <meta name="color-scheme" content="dark">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
-body{overflow:hidden;background:#06060e;touch-action:none}
-canvas{position:absolute;inset:0}
-.ov{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:10% 8% 8%;pointer-events:none;z-index:10}
-.tm{font-size:clamp(90px,34vw,220px);font-weight:100;color:rgba(255,255,255,.85);line-height:.85;letter-spacing:-5px;font-family:var(--font-display,-apple-system,system-ui,sans-serif);text-shadow:0 0 80px rgba(var(--gr),var(--gg),var(--gb),.25)}
-.dt{font-size:14px;color:rgba(255,255,255,.3);letter-spacing:4px;margin-top:8px;font-family:var(--font-display,-apple-system,system-ui,sans-serif)}
-.bt{text-align:right}
-.vc{font-size:clamp(18px,4.5vw,24px);font-weight:300;color:rgba(255,255,255,.65);line-height:1.6;font-family:var(--font-display,-apple-system,system-ui,sans-serif);text-shadow:0 1px 12px rgba(0,0,0,.6)}
-.ht{font-size:12px;color:rgba(255,255,255,.15);letter-spacing:3px;text-align:center;margin-top:16px;font-family:var(--font-display,-apple-system,system-ui,sans-serif)}
+body{overflow:hidden;background:#08051a;font-family:var(--font-display,-apple-system,"Helvetica Neue","PingFang SC",system-ui,sans-serif);touch-action:none}
+canvas{position:absolute;inset:0;z-index:0}
+.bg{position:absolute;inset:0;overflow:hidden;filter:blur(70px);opacity:1;z-index:1}
+.bg i{position:absolute;border-radius:50%}
+.bg i:nth-child(1){top:-20%;left:-15%;width:80vmin;height:80vmin;background:radial-gradient(circle,rgba(120,50,180,.8),rgba(80,20,140,.4) 50%,transparent 70%);animation:d1 14s ease-in-out infinite}
+.bg i:nth-child(2){bottom:0%;right:-20%;width:75vmin;height:75vmin;background:radial-gradient(circle,rgba(30,100,180,.7),rgba(20,60,140,.3) 50%,transparent 70%);animation:d2 18s ease-in-out infinite}
+.bg i:nth-child(3){top:35%;left:20%;width:60vmin;height:60vmin;background:radial-gradient(circle,rgba(180,60,100,.5),rgba(120,30,80,.2) 50%,transparent 70%);animation:d3 22s ease-in-out infinite}
+.bg i:nth-child(4){bottom:25%;left:50%;width:50vmin;height:50vmin;background:radial-gradient(circle,rgba(60,180,160,.4),rgba(30,120,100,.15) 50%,transparent 70%);animation:d1 26s ease-in-out infinite reverse}
+@keyframes d1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,30px) scale(1.15)}66%{transform:translate(-20px,-15px) scale(.9)}}
+@keyframes d2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-35px,-20px) scale(1.12)}66%{transform:translate(20px,35px) scale(.88)}}
+@keyframes d3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(25px,-25px) scale(1.18)}}
+.time-row{position:absolute;top:8%;left:7%;right:7%;z-index:20;pointer-events:none}
+.time-big{font-size:clamp(72px,28vw,180px);font-weight:100;color:rgba(255,255,255,.82);line-height:.9;letter-spacing:-4px}
+.time-sub{font-size:14px;color:rgba(255,255,255,.28);letter-spacing:4px;margin-top:6px}
+.cards{position:absolute;top:28%;bottom:12%;left:5%;right:5%;z-index:10}
+.card{position:absolute;width:clamp(140px,42vw,200px);border-radius:16px;padding:16px 14px 14px;cursor:pointer;perspective:600px;
+  background:rgba(255,255,255,.05);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.08);
+  transition:transform .6s cubic-bezier(.23,1,.32,1),box-shadow .6s ease,opacity .6s ease;
+  box-shadow:0 4px 30px rgba(0,0,0,.3)}
+.card:active{transform:scale(1.05)!important;box-shadow:0 8px 40px rgba(120,100,220,.25)!important}
+.card .front,.card .back{transition:opacity .4s ease}
+.card.flipped .front{opacity:0}
+.card.flipped .back{opacity:1}
+.card .back{opacity:0;position:absolute;inset:16px 14px 14px}
+.card-icon{font-size:20px;margin-bottom:6px}
+.card-text{font-size:14px;color:rgba(255,255,255,.8);line-height:1.5;font-weight:300}
+.card-hint{font-size:11px;color:rgba(255,255,255,.25);margin-top:8px;letter-spacing:1px}
+.back .card-text{color:rgba(200,180,255,.9)}
+.footer{position:absolute;bottom:6%;left:0;right:0;text-align:center;z-index:20;pointer-events:none}
+.footer-text{font-size:13px;color:rgba(255,255,255,.2);letter-spacing:2px}
+@keyframes float{0%,100%{transform:translateY(0px)}50%{transform:translateY(-10px)}}
 </style>
 </head><body>
-<canvas id="c"></canvas>
-<div class="ov">
-  <div>
-    <div class="tm" id="tm"></div>
-    <div class="dt" id="dt"></div>
-  </div>
-  <div class="bt">
-    <div class="vc" id="vc"></div>
-    <div class="ht">触摸屏幕 · 搅动光流</div>
-  </div>
-</div>
+<canvas id="cv"></canvas>
+<div class="bg"><i></i><i></i><i></i><i></i></div>
+<div class="time-row"><div class="time-big" id="tm"></div><div class="time-sub" id="dt"></div></div>
+<div class="cards" id="cards"></div>
+<div class="footer"><div class="footer-text">点一张卡片 · 看看背面写了什么</div></div>
 <script>
 (function(){
-// ── Time & text ──
+// ── Particle starfield background ──
+var cv=document.getElementById('cv'),cx=cv.getContext('2d');
+var W,H,dpr=Math.min(window.devicePixelRatio||1,2);
+function rsz(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0);}
+rsz();
+var stars=[];
+for(var i=0;i<100;i++){
+  stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2+.4,
+    dx:(Math.random()-.5)*.15,dy:Math.random()*.1+.02,
+    phase:Math.random()*Math.PI*2,speed:Math.random()*.8+.4,
+    hue:Math.random()>.7?'220,200,255':'180,160,240'});
+}
+function drawStars(){
+  cx.clearRect(0,0,W,H);
+  var t=performance.now()*.001;
+  for(var i=0;i<stars.length;i++){
+    var s=stars[i];
+    s.x+=s.dx;s.y+=s.dy;
+    if(s.y>H+10){s.y=-10;s.x=Math.random()*W;}
+    if(s.x<-10)s.x=W+10;if(s.x>W+10)s.x=-10;
+    var twinkle=.4+Math.sin(t*s.speed+s.phase)*.4;
+    cx.globalAlpha=twinkle;
+    cx.fillStyle='rgba('+s.hue+',1)';
+    cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fill();
+    if(s.r>1.2){
+      cx.globalAlpha=twinkle*.2;
+      cx.beginPath();cx.arc(s.x,s.y,s.r*5,0,Math.PI*2);cx.fill();
+    }
+  }
+  cx.globalAlpha=1;
+  requestAnimationFrame(drawStars);
+}
+drawStars();
+
+// ── Time & cards ──
 var now=new Date(),h=now.getHours(),mi=String(now.getMinutes()).padStart(2,'0');
 var days=['周日','周一','周二','周三','周四','周五','周六'];
 document.getElementById('tm').textContent=h+':'+mi;
 document.getElementById('dt').textContent=(now.getMonth()+1)+'月'+now.getDate()+'日 '+days[now.getDay()];
-var voices=['夜深了，世界安静下来。','醒来了？今天会是好的一天。','专注的上午，你在发光。',
-'午后松一口气，阳光正好。','下午了，慢慢来。','日落的颜色，只属于此刻。',
-'晚上好，今天辛苦了。','夜晚是留给自己的。'];
-var vi=h<5?0:h<9?1:h<12?2:h<14?3:h<17?4:h<19?5:h<22?6:7;
-document.getElementById('vc').textContent=voices[vi];
 
-// ── Color palette by time of day ──
-var palettes=[
-  [[20,10,60],[80,40,120],[30,60,140]],       // 0-5 deep night: indigo/violet
-  [[180,100,40],[220,160,60],[140,60,30]],     // 5-9 morning: amber/gold
-  [[40,120,180],[60,80,160],[100,160,200]],    // 9-12 morning: sky blue
-  [[180,140,60],[200,120,80],[160,100,40]],    // 12-14 noon: warm gold
-  [[160,80,120],[120,60,160],[80,100,180]],    // 14-17 afternoon: mauve/purple
-  [[200,80,40],[180,60,80],[120,40,60]],       // 17-19 sunset: coral/red
-  [[60,40,120],[100,60,160],[40,80,140]],      // 19-22 evening: deep purple
-  [[15,8,50],[60,30,100],[20,50,120]]          // 22-24 late night: near-black violet
+// Card data: [icon, front text, back text]
+var data=[
+  ['💭','今天有什么想做的？','不想做也没关系，\\n发呆也是一种充电。'],
+  ['☀️','外面 22°C · 晴','适合出门走走，\\n阳光在 18:30 落下。'],
+  ['📋','待办还剩 3 件','最重要的那件，\\n你心里已经知道是哪个。'],
+  ['🎵','昨晚听着歌睡着了','《河流》播到 3:30 暂停，\\n要不要继续？'],
+  ['✉️','有 2 条消息没看','都不急。\\n重要的人会打电话。'],
+  ['🌙','昨晚 11:47 才睡','比前天早了 20 分钟，\\n在变好。']
 ];
-var pal=palettes[vi];
-// Set CSS vars for time glow
-document.documentElement.style.setProperty('--gr',pal[0][0]);
-document.documentElement.style.setProperty('--gg',pal[0][1]);
-document.documentElement.style.setProperty('--gb',pal[0][2]);
+// Shuffle based on time so each boot feels different
+var seed=h*60+now.getMinutes();
+data.sort(function(a,b){return Math.sin(seed*a[0].charCodeAt(0))-Math.sin(seed*b[0].charCodeAt(0));});
 
-// ── Simplex-ish noise (fast 2D) ──
-var perm=new Uint8Array(512);
-for(var i=0;i<256;i++)perm[i]=i;
-for(var i=255;i>0;i--){var j=Math.random()*i|0;var t=perm[i];perm[i]=perm[j];perm[j]=t;}
-for(var i=0;i<256;i++)perm[i+256]=perm[i];
-var G=[[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
-function dot2(g,x,y){return g[0]*x+g[1]*y;}
-function noise2(x,y){
-  var F2=.5*(Math.sqrt(3)-1),G2=(3-Math.sqrt(3))/6;
-  var s=(x+y)*F2,i=Math.floor(x+s),j=Math.floor(y+s);
-  var t=(i+j)*G2,x0=x-(i-t),y0=y-(j-t);
-  var i1=x0>y0?1:0,j1=x0>y0?0:1;
-  var x1=x0-i1+G2,y1=y0-j1+G2,x2=x0-1+2*G2,y2=y0-1+2*G2;
-  var ii=i&255,jj=j&255;
-  var n0=0,n1=0,n2=0;
-  var t0=.5-x0*x0-y0*y0;if(t0>0){t0*=t0;var gi=perm[ii+perm[jj]]%8;n0=t0*t0*dot2(G[gi],x0,y0);}
-  var t1=.5-x1*x1-y1*y1;if(t1>0){t1*=t1;var gi=perm[ii+i1+perm[jj+j1]]%8;n1=t1*t1*dot2(G[gi],x1,y1);}
-  var t2=.5-x2*x2-y2*y2;if(t2>0){t2*=t2;var gi=perm[ii+1+perm[jj+1]]%8;n2=t2*t2*dot2(G[gi],x2,y2);}
-  return 70*(n0+n1+n2);
-}
+var container=document.getElementById('cards');
+var positions=[
+  {top:'0%',left:'2%'},{top:'5%',right:'0%'},
+  {top:'32%',left:'8%'},{top:'38%',right:'5%'},
+  {top:'64%',left:'0%'},{top:'68%',right:'8%'}
+];
+var durations=[6,7,5.5,8,6.5,7.5];
 
-// ── Canvas setup ──
-var cv=document.getElementById('c'),cx=cv.getContext('2d');
-var W,H,dpr=Math.min(window.devicePixelRatio||1,2);
-function resize(){W=window.innerWidth;H=window.innerHeight;cv.width=W*dpr;cv.height=H*dpr;cx.scale(dpr,dpr);}
-resize();window.addEventListener('resize',resize);
+data.forEach(function(d,i){
+  var card=document.createElement('div');
+  card.className='card';
+  var pos=positions[i];
+  if(pos.left!==undefined)card.style.left=pos.left;
+  if(pos.right!==undefined)card.style.right=pos.right;
+  card.style.top=pos.top;
+  card.style.animation='float '+durations[i]+'s ease-in-out '+(i*0.8)+'s infinite';
 
-// ── Particles ──
-var N=280,ps=[];
-function mkP(){
-  return{x:Math.random()*W,y:Math.random()*H,
-    vx:0,vy:0,life:Math.random()*200+100,age:0,
-    ci:Math.random()*3|0,sz:Math.random()*1.5+.5};
-}
-for(var i=0;i<N;i++)ps.push(mkP());
+  var backText=d[2].replace(/\\\\n/g,'<br>');
 
-// ── Touch attractor ──
-var mx=-9999,my=-9999,mStr=0;
-function onT(e){
-  e.preventDefault();
-  var t=e.touches?e.touches[0]:e;
-  mx=t.clientX;my=t.clientY;mStr=180;
-}
-function onE(){mStr*=.92;if(mStr<1)mStr=0;}
-document.addEventListener('touchstart',onT,{passive:false});
-document.addEventListener('touchmove',onT,{passive:false});
-document.addEventListener('touchend',onE);
-document.addEventListener('mousedown',onT);
-document.addEventListener('mousemove',function(e){if(e.buttons)onT(e);});
-document.addEventListener('mouseup',onE);
+  card.innerHTML='<div class="front">'
+    +'<div class="card-icon">'+d[0]+'</div>'
+    +'<div class="card-text">'+d[1]+'</div>'
+    +'<div class="card-hint">点击翻转</div>'
+    +'</div>'
+    +'<div class="back">'
+    +'<div class="card-icon">✦</div>'
+    +'<div class="card-text">'+backText+'</div>'
+    +'</div>';
 
-// ── Render loop ──
-var t0=performance.now(),frame=0;
-function draw(){
-  var elapsed=(performance.now()-t0)*.001;
-  // Fade trail
-  cx.globalCompositeOperation='source-over';
-  cx.fillStyle='rgba(6,6,14,.06)';
-  cx.fillRect(0,0,W,H);
-  cx.globalCompositeOperation='lighter';
-
-  var ns=.003,spd=.8;
-  for(var i=0;i<N;i++){
-    var p=ps[i];
-    // Noise-driven angle
-    var angle=noise2(p.x*ns+elapsed*.08,p.y*ns+elapsed*.06)*Math.PI*4;
-    p.vx+=(Math.cos(angle)*spd-p.vx)*.08;
-    p.vy+=(Math.sin(angle)*spd-p.vy)*.08;
-
-    // Touch attractor
-    if(mStr>1){
-      var dx=mx-p.x,dy=my-p.y,dist=Math.sqrt(dx*dx+dy*dy)+1;
-      if(dist<250){
-        var f=mStr/(dist*dist)*40;
-        // Swirl: perpendicular + inward
-        p.vx+=(-dy/dist*f*.7+dx/dist*f*.3);
-        p.vy+=(dx/dist*f*.7+dy/dist*f*.3);
-      }
+  card.addEventListener('click',function(e){
+    e.stopPropagation();
+    card.classList.toggle('flipped');
+    // Auto flip back after 4s
+    if(card.classList.contains('flipped')){
+      setTimeout(function(){card.classList.remove('flipped');},4000);
     }
+  });
 
-    p.x+=p.vx;p.y+=p.vy;
-    p.age++;
-    // Respawn
-    if(p.age>p.life||p.x<-20||p.x>W+20||p.y<-20||p.y>H+20){
-      var np=mkP();p.x=np.x;p.y=np.y;p.vx=0;p.vy=0;p.age=0;p.life=np.life;p.ci=np.ci;p.sz=np.sz;
-    }
-
-    // Alpha based on age (fade in/out)
-    var lifeRatio=p.age/p.life;
-    var alpha=lifeRatio<.1?lifeRatio*10:lifeRatio>.8?(1-lifeRatio)*5:1;
-    alpha*=.6;
-    var c=pal[p.ci];
-    cx.fillStyle='rgba('+c[0]+','+c[1]+','+c[2]+','+alpha+')';
-    cx.beginPath();
-    cx.arc(p.x,p.y,p.sz,0,Math.PI*2);
-    cx.fill();
-  }
-
-  // Occasional bright spark
-  if(frame%3===0){
-    var sp=ps[Math.random()*N|0];
-    if(sp.age>10){
-      var c=pal[sp.ci];
-      cx.fillStyle='rgba('+Math.min(c[0]+80,255)+','+Math.min(c[1]+80,255)+','+Math.min(c[2]+80,255)+',0.8)';
-      cx.beginPath();cx.arc(sp.x,sp.y,sp.sz+1,0,Math.PI*2);cx.fill();
-    }
-  }
-  frame++;
-  requestAnimationFrame(draw);
-}
-draw();
+  container.appendChild(card);
+});
 })();
 </script>
 </body></html>`;
