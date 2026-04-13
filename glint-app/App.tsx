@@ -253,7 +253,7 @@ const App: React.FC = () => {
     setSheetOpen(true);
   }, []);
 
-  // Lock the sheet overlay — prevent any touch-drag from shifting the page.
+  // Lock the sheet overlay — block horizontal drag, allow vertical scroll in panel.
   const sheetRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -262,22 +262,25 @@ const App: React.FC = () => {
     const panel = panelRef.current;
     if (!sheet || !panel) return;
 
-    // Block all touchmove on the backdrop (non-scrollable area)
+    // Block all touchmove on the backdrop (outside panel)
     const blockTouch = (e: TouchEvent) => { e.preventDefault(); };
     sheet.addEventListener('touchmove', blockTouch, { passive: false });
 
-    // For the panel: allow internal scroll, but block overscroll at boundaries
-    let lastY = 0;
-    const onStart = (e: TouchEvent) => { lastY = e.touches[0].clientY; };
+    // Panel: allow vertical scroll, block horizontal drag, stop propagation to backdrop
+    let startX = 0;
+    let startY = 0;
+    const onStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    };
     const onMove = (e: TouchEvent) => {
-      const y = e.touches[0].clientY;
-      const dy = y - lastY;
-      const atTop = panel.scrollTop <= 0;
-      const atBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 1;
-      if ((atTop && dy > 0) || (atBottom && dy < 0)) {
+      e.stopPropagation(); // don't let backdrop's blockTouch fire
+      const dx = Math.abs(e.touches[0].clientX - startX);
+      const dy = Math.abs(e.touches[0].clientY - startY);
+      // Block if horizontal drag dominates
+      if (dx > dy && dx > 5) {
         e.preventDefault();
       }
-      lastY = y;
     };
     panel.addEventListener('touchstart', onStart, { passive: true });
     panel.addEventListener('touchmove', onMove, { passive: false });

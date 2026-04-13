@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sandbox } from './Sandbox';
+import { GlintHaloMark } from './GlintHaloMark';
 
 interface LockScreenProps {
   htmlContent: string;
@@ -38,7 +39,10 @@ export const LockScreen: React.FC<LockScreenProps> = ({
 
       {isActive && (
         <div className="lock-back-pill" onClick={onBack}>
-          <span className="lock-back-brand">GLINT</span>
+          <span className="lock-back-brand">
+            <GlintHaloMark className="lock-back-mark" size={14} />
+            <span>GLINT</span>
+          </span>
           <span className="lock-back-hint">{isLoading ? '生成中...' : '选择场景'}</span>
         </div>
       )}

@@ -1,3 +1,5 @@
+import { buildGlintHaloSvg } from './brand';
+
 /**
  * 预生成锁屏 HTML — 用于 Canvas 交互 / 生成式动画等
  * flash-lite 无法实时生成的高复杂度场景。
@@ -5,6 +7,14 @@
  * 格式：完整 <!doctype html>，与 Gemini 实时输出格式一致，
  * 直接交给 Sandbox 渲染。不要写固定 width/height，sandbox 自带全屏。
  */
+
+const GLINT_HALO_MARK = buildGlintHaloSvg({
+  size: 18,
+  strokeColor: 'rgba(241,247,255,0.92)',
+  outerStrokeColor: 'rgba(255,255,255,0.14)',
+  dotColor: '#ffffff',
+  glowColor: 'rgba(165,198,255,0.28)',
+});
 
 // ─────────────────────────────────────────────
 // 0. 开机首帧 — 氛围主视觉 + 三张重点卡片
@@ -363,7 +373,7 @@ profile.cards.forEach(function(cardData,i){
     + '<div class="card-hint">点开看看背面</div>'
     + '</div>'
     + '<div class="back">'
-    + '<div class="card-top"><div class="card-icon">✦</div><div class="card-label">'+cardData.label+'</div></div>'
+    + '<div class="card-top"><div class="card-icon">'+GLINT_HALO_MARK+'</div><div class="card-label">'+cardData.label+'</div></div>'
     + '<div class="card-body">'+cardData.back+'</div>'
     + '</div>';
 
@@ -1158,6 +1168,9 @@ export const PREFAB_SOUND_WAVE = `<!DOCTYPE html>
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             text-align: center;
             color: rgba(200, 200, 220, 0.6);
             font-size: 11px;
@@ -1167,7 +1180,7 @@ export const PREFAB_SOUND_WAVE = `<!DOCTYPE html>
 </head>
 <body>
     <canvas id="canvas"></canvas>
-    <div id="info">✨ GLINT</div>
+    <div id="info">${GLINT_HALO_MARK}<span>GLINT</span></div>
 
     <script>
         const canvas = document.getElementById('canvas');

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PRESET_PROMPTS } from '../constants/prompts';
 import type { PromptSource } from '../services/geminiService';
+import { GlintHaloMark } from './GlintHaloMark';
 
 interface HomeScreenProps {
   onGenerate: (prompt: string, promptSource: PromptSource, prefabHtml?: string) => void;
@@ -19,7 +20,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onGenerate }) => {
 
   return (
     <div className="home-screen">
-      <div className="home-brand">GLINT</div>
+      <div className="home-brand">
+        <div className="home-brand-lockup">
+          <GlintHaloMark className="home-brand-mark" size={26} />
+          <div className="home-brand-copy">
+            <div className="home-brand-name">GLINT</div>
+            <div className="home-brand-tag">某个时刻被轻轻点亮</div>
+          </div>
+        </div>
+      </div>
       <div className="home-title">你希望此刻的<br />屏幕是什么样？</div>
 
       <div className="home-chips">
@@ -43,7 +52,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onGenerate }) => {
           placeholder="或者，描述你想看到的..."
         />
         <button className="home-submit" type="submit">
-          <span>✦</span>
+          <GlintHaloMark className="home-submit-mark" size={18} />
         </button>
       </form>
     </div>

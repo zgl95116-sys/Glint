@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Glint Logo Lab</title>
+    <style>
+      :root {
+        --bg-0: #07111f;
+        --bg-1: #0d1830;
+        --panel: rgba(10, 18, 34, 0.72);
+        --panel-2: rgba(255, 255, 255, 0.08);
+        --text: rgba(244, 247, 255, 0.96);
+        --muted: rgba(211, 223, 255, 0.56);
+        --line: rgba(255, 255, 255, 0.12);
+        --accent: #92b9ff;
+        --accent-2: #73ebff;
+        --accent-glow: rgba(146, 185, 255, 0.38);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background:
+          radial-gradient(circle at 18% 12%, rgba(124, 98, 255, 0.24), transparent 24%),
+          radial-gradient(circle at 82% 18%, rgba(95, 226, 255, 0.14), transparent 22%),
+          radial-gradient(circle at 52% 72%, rgba(255, 136, 184, 0.10), transparent 26%),
+          linear-gradient(180deg, var(--bg-0), var(--bg-1));
+        color: var(--text);
+        font-family: "SF Pro Display", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      body {
+        padding: 36px 20px 48px;
+      }
+
+      .page {
+        max-width: 1220px;
+        margin: 0 auto;
+      }
+
+      .eyebrow {
+        font-size: 12px;
+        letter-spacing: 0.32em;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 12px 0 10px;
+        font-size: clamp(34px, 6vw, 68px);
+        line-height: 0.95;
+        letter-spacing: -0.06em;
+      }
+
+      .lede {
+        max-width: 760px;
+        margin: 0;
+        font-size: 17px;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+
+      .current {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 20px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 13px;
+      }
+
+      .current .star {
+        display: inline-flex;
+        width: 28px;
+        height: 28px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        box-shadow: 0 8px 18px rgba(118, 75, 162, 0.26);
+        font-size: 15px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(320px, 1.2fr) minmax(300px, 0.9fr);
+        gap: 24px;
+        margin-top: 30px;
+      }
+
+      .panel {
+        position: relative;
+        border-radius: 28px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+        box-shadow: 0 18px 70px rgba(0, 0, 0, 0.28);
+        overflow: hidden;
+      }
+
+      .preview {
+        padding: 22px;
+      }
+
+      .phone {
+        position: relative;
+        width: min(100%, 430px);
+        aspect-ratio: 430 / 880;
+        margin: 0 auto;
+        border-radius: 40px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background:
+          radial-gradient(circle at 26% 18%, rgba(136, 148, 255, 0.26), transparent 25%),
+          radial-gradient(circle at 70% 72%, rgba(83, 223, 255, 0.13), transparent 24%),
+          linear-gradient(180deg, #0b1530 0%, #111d3f 45%, #091224 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.08),
+          0 28px 60px rgba(2, 5, 15, 0.42);
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 50% 34%, rgba(255, 255, 255, 0.12), transparent 21%),
+          radial-gradient(circle at 50% 76%, rgba(170, 133, 255, 0.18), transparent 26%);
+        filter: blur(14px);
+        pointer-events: none;
+      }
+
+      .screen {
+        position: absolute;
+        inset: 0;
+        padding: 22px 20px 20px;
+      }
+
+      .status {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.76);
+      }
+
+      .status-right {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .status-pill {
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.09);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+      }
+
+      .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .brand-mark {
+        position: relative;
+        flex: 0 0 auto;
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .brand-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .brand-title {
+        letter-spacing: 0.28em;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .brand-sub {
+        font-size: 12px;
+        color: rgba(219, 229, 255, 0.58);
+      }
+
+      .hero-time {
+        margin-top: 78px;
+        font-size: clamp(92px, 22vw, 150px);
+        line-height: 0.86;
+        letter-spacing: -0.08em;
+        font-weight: 140;
+        text-shadow: 0 0 34px var(--accent-glow);
+      }
+
+      .hero-message {
+        max-width: 82%;
+        margin-top: 16px;
+        font-size: 28px;
+        line-height: 1.35;
+      }
+
+      .hero-caption {
+        margin-top: 12px;
+        color: rgba(225, 232, 255, 0.55);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .info-card {
+        margin-top: 26px;
+        padding: 16px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 14px 28px rgba(2, 5, 15, 0.24);
+      }
+
+      .info-label {
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        color: rgba(219, 229, 255, 0.52);
+      }
+
+      .info-main {
+        margin-top: 10px;
+        font-size: 18px;
+        line-height: 1.4;
+      }
+
+      .cta {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 24px;
+      }
+
+      .cta button {
+        appearance: none;
+        border: 0;
+        cursor: pointer;
+      }
+
+      .cta-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(139, 184, 255, 0.22), rgba(115, 235, 255, 0.16));
+        border: 1px solid rgba(170, 212, 255, 0.24);
+        color: var(--text);
+        font-size: 14px;
+        box-shadow: 0 10px 26px rgba(89, 142, 255, 0.18);
+      }
+
+      .cta-secondary {
+        padding: 14px 16px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 14px;
+      }
+
+      .options {
+        padding: 18px;
+      }
+
+      .options-title {
+        font-size: 14px;
+        letter-spacing: 0.2em;
+        color: rgba(220, 230, 255, 0.56);
+        text-transform: uppercase;
+      }
+
+      .option-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .option {
+        width: 100%;
+        padding: 16px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        background: rgba(255, 255, 255, 0.05);
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      }
+
+      .option:hover {
+        transform: translateY(-1px);
+        border-color: rgba(177, 206, 255, 0.20);
+      }
+
+      .option.active {
+        background: linear-gradient(135deg, rgba(121, 168, 255, 0.16), rgba(115, 235, 255, 0.10));
+        border-color: rgba(177, 206, 255, 0.26);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .option-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .option-name {
+        font-size: 19px;
+      }
+
+      .option-tag {
+        font-size: 12px;
+        color: rgba(228, 237, 255, 0.56);
+      }
+
+      .option-desc {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .mini-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .mini-wordmark {
+        font-size: 13px;
+        letter-spacing: 0.24em;
+        color: rgba(255, 255, 255, 0.86);
+      }
+
+      .notes {
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .notes h2 {
+        margin: 0 0 10px;
+        font-size: 18px;
+      }
+
+      .notes p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .mark-time::before,
+      .mark-time::after,
+      .mark-time span,
+      .mark-cut::before,
+      .mark-halo::before,
+      .mark-halo::after,
+      .mark-halo span {
+        content: "";
+        position: absolute;
+      }
+
+      .mark-time::before,
+      .mark-time::after {
+        top: 9px;
+        width: 8px;
+        height: 20px;
+        border-top: 2px solid var(--accent);
+        border-bottom: 2px solid var(--accent);
+      }
+
+      .mark-time::before {
+        left: 10px;
+        border-left: 2px solid var(--accent);
+        border-top-left-radius: 8px;
+        border-bottom-left-radius: 8px;
+      }
+
+      .mark-time::after {
+        right: 10px;
+        border-right: 2px solid var(--accent);
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+      }
+
+      .mark-time span {
+        left: 50%;
+        top: 50%;
+        width: 5px;
+        height: 14px;
+        transform: translate(-50%, -50%);
+      }
+
+      .mark-time span::before,
+      .mark-time span::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: linear-gradient(180deg, #f5fbff, #8cc3ff);
+        box-shadow: 0 0 12px rgba(146, 185, 255, 0.34);
+      }
+
+      .mark-time span::before {
+        top: 0;
+      }
+
+      .mark-time span::after {
+        bottom: 0;
+      }
+
+      .mark-cut::before {
+        left: 18px;
+        top: 9px;
+        width: 2px;
+        height: 22px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--accent), rgba(115, 235, 255, 0.9), rgba(255, 255, 255, 0));
+        transform: rotate(28deg);
+        box-shadow: 0 0 16px rgba(115, 235, 255, 0.32);
+      }
+
+      .mark-halo::before {
+        inset: 9px;
+        border-radius: 999px;
+        border: 1.5px solid rgba(146, 185, 255, 0.78);
+        box-shadow: 0 0 18px rgba(146, 185, 255, 0.18);
+      }
+
+      .mark-halo::after {
+        inset: 4px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .mark-halo span {
+        left: 50%;
+        top: 50%;
+        width: 7px;
+        height: 7px;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: linear-gradient(180deg, #f4fbff, #9fc8ff);
+        box-shadow: 0 0 20px rgba(146, 185, 255, 0.44);
+      }
+
+      [data-variant="time"] {
+        --accent: #9ac0ff;
+        --accent-2: #7ceaff;
+        --accent-glow: rgba(154, 192, 255, 0.34);
+      }
+
+      [data-variant="cut"] {
+        --accent: #eaf6ff;
+        --accent-2: #8af0ff;
+        --accent-glow: rgba(138, 240, 255, 0.22);
+      }
+
+      [data-variant="halo"] {
+        --accent: #bdd4ff;
+        --accent-2: #9ab9ff;
+        --accent-glow: rgba(189, 212, 255, 0.28);
+      }
+
+      @media (max-width: 960px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .preview {
+          order: 2;
+        }
+
+        .options {
+          order: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page" data-variant="time" id="page">
+      <div class="eyebrow">GLINT LOGO LAB</div>
+      <h1>不是直接换个星星，<br>而是把“这一刻被点亮”做成品牌。</h1>
+      <p class="lede">
+        这里是 3 个更贴近 Glint 产品语义的方向。右侧不是静态图，而是一个真实网页预览，你可以切换看它在首页、锁屏品牌位和按钮里的实际感觉。
+      </p>
+      <div class="current">
+        <span class="star">✦</span>
+        当前参考：`紫色渐变 + 四角星` 很像通用 AI 产品，不太像“时刻锁屏”。
+      </div>
+
+      <div class="layout">
+        <div class="panel preview">
+          <div class="phone">
+            <div class="screen">
+              <div class="status">
+                <span>中国移动</span>
+                <div class="status-right">
+                  <span>5G</span>
+                  <span class="status-pill">97%</span>
+                </div>
+              </div>
+
+              <div class="brand-row">
+                <div class="brand-mark mark-time" id="brandMark"><span></span></div>
+                <div class="brand-copy">
+                  <div class="brand-title">GLINT</div>
+                  <div class="brand-sub" id="brandSub">Time Glint · 像时间被点亮一下</div>
+                </div>
+              </div>
+
+              <div class="hero-time">19:57</div>
+              <div class="hero-message" id="heroMessage">这一刻值得被认真对待。</div>
+              <div class="hero-caption" id="heroCaption">更像“时刻被点亮”，不像泛 AI 工具。适合 Glint 现在这条路。</div>
+
+              <div class="info-card">
+                <div class="info-label">PRE-SALE MOMENT</div>
+                <div class="info-main" id="infoMain">告五人巡演预售还有 03:00，入口已经准备好了。</div>
+              </div>
+
+              <div class="cta">
+                <button class="cta-primary">
+                  <span class="brand-mark mark-time" id="ctaMark" style="width: 24px; height: 24px; border-radius: 9px;"><span></span></span>
+                  <span id="ctaText">进入这个时刻</span>
+                </button>
+                <button class="cta-secondary">稍后再看</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel options">
+          <div class="options-title">Three Directions</div>
+          <div class="option-list">
+            <button class="option active" data-variant-key="time">
+              <div class="option-top">
+                <div class="option-name">A. Time Glint</div>
+                <div class="option-tag">最适合现在的产品</div>
+              </div>
+              <div class="option-desc">把品牌和“时间被点亮一下”绑死。不是星星，不是 AI 魔法，是某个时刻突然有了形状。</div>
+              <div class="mini-row">
+                <div class="brand-mark mark-time" style="width: 30px; height: 30px; border-radius: 11px;"><span></span></div>
+                <div class="mini-wordmark">GLINT</div>
+              </div>
+            </button>
+
+            <button class="option" data-variant-key="cut">
+              <div class="option-top">
+                <div class="option-name">B. Light Cut</div>
+                <div class="option-tag">最克制，最编辑感</div>
+              </div>
+              <div class="option-desc">只有一道光切，不再用传统图标。更像科技硬件或杂志品牌，成熟，但温度比 A 冷。</div>
+              <div class="mini-row">
+                <div class="brand-mark mark-cut" style="width: 30px; height: 30px; border-radius: 11px;"></div>
+                <div class="mini-wordmark">GLINT</div>
+              </div>
+            </button>
+
+            <button class="option" data-variant-key="halo">
+              <div class="option-top">
+                <div class="option-name">C. Halo Dot</div>
+                <div class="option-tag">最柔和，最有夜间氛围</div>
+              </div>
+              <div class="option-desc">一个光点落在光晕中心，像锁屏刚刚亮起。适合夜间与治愈感，但辨识度比 A 稍弱。</div>
+              <div class="mini-row">
+                <div class="brand-mark mark-halo" style="width: 30px; height: 30px; border-radius: 11px;"><span></span></div>
+                <div class="mini-wordmark">GLINT</div>
+              </div>
+            </button>
+          </div>
+
+          <div class="notes">
+            <h2 id="notesTitle">为什么推荐 A</h2>
+            <p id="notesBody">因为它同时回答了两件事：一是 Glint 和“时间/时刻”的关系，二是它看起来不会掉进通用 AI 品牌的套路里。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const variants = {
+        time: {
+          sub: "Time Glint · 像时间被点亮一下",
+          message: "这一刻值得被认真对待。",
+          caption: "更像“时刻被点亮”，不像泛 AI 工具。适合 Glint 现在这条路。",
+          info: "告五人巡演预售还有 03:00，入口已经准备好了。",
+          cta: "进入这个时刻",
+          notesTitle: "为什么推荐 A",
+          notesBody: "因为它同时回答了两件事：一是 Glint 和“时间/时刻”的关系，二是它看起来不会掉进通用 AI 品牌的套路里。",
+          markClass: "mark-time"
+        },
+        cut: {
+          sub: "Light Cut · 像一道光切开屏幕",
+          message: "把复杂信息先切掉，只留下这一下亮。",
+          caption: "更成熟、更硬一点，适合你以后把 Glint 往科技品牌或编辑产品方向推。",
+          info: "不是提醒更花，而是让视觉切出一个焦点。",
+          cta: "用一道光打开",
+          notesTitle: "B 的优势",
+          notesBody: "这条路线高级、克制、不会过时。缺点是它更像品牌，不如 A 那么直接讲清“时刻”这件事。",
+          markClass: "mark-cut"
+        },
+        halo: {
+          sub: "Halo Dot · 像屏幕醒来的那一下",
+          message: "别急，让屏幕先轻轻亮起来。",
+          caption: "夜间感最强，也最柔和，适合你做治愈和陪伴型场景。",
+          info: "像深夜锁屏刚亮起，信息还没涌进来之前的那一小圈光。",
+          cta: "先轻一点",
+          notesTitle: "C 的优势",
+          notesBody: "它有氛围，也有情绪，和锁屏产品天然匹配。问题是单独拿出去时，辨识度和锐度都比 A 稍弱。",
+          markClass: "mark-halo"
+        }
+      };
+
+      const page = document.getElementById("page");
+      const brandMark = document.getElementById("brandMark");
+      const ctaMark = document.getElementById("ctaMark");
+      const brandSub = document.getElementById("brandSub");
+      const heroMessage = document.getElementById("heroMessage");
+      const heroCaption = document.getElementById("heroCaption");
+      const infoMain = document.getElementById("infoMain");
+      const ctaText = document.getElementById("ctaText");
+      const notesTitle = document.getElementById("notesTitle");
+      const notesBody = document.getElementById("notesBody");
+
+      function setMark(el, className) {
+        el.className = "brand-mark " + className;
+        el.innerHTML = className === "mark-cut" ? "" : "<span></span>";
+      }
+
+      function applyVariant(key) {
+        const data = variants[key];
+        page.dataset.variant = key;
+        setMark(brandMark, data.markClass);
+        setMark(ctaMark, data.markClass);
+        brandSub.textContent = data.sub;
+        heroMessage.textContent = data.message;
+        heroCaption.textContent = data.caption;
+        infoMain.textContent = data.info;
+        ctaText.textContent = data.cta;
+        notesTitle.textContent = data.notesTitle;
+        notesBody.textContent = data.notesBody;
+
+        document.querySelectorAll(".option").forEach((node) => {
+          node.classList.toggle("active", node.dataset.variantKey === key);
+        });
+      }
+
+      document.querySelectorAll(".option").forEach((node) => {
+        node.addEventListener("click", () => applyVariant(node.dataset.variantKey));
+      });
+    </script>
+  </body>
+</html>

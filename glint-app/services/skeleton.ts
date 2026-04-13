@@ -2,6 +2,7 @@
 // Shows a faithful lockscreen while Glint generates AI content behind a blur.
 
 import { LOCKSCREEN_BG } from './lockscreen-bg';
+import { buildGlintHaloSvg } from '../constants/brand';
 
 // ── Hashing ──────────────────────────────────────────────
 
@@ -416,7 +417,7 @@ export function buildBridgeHtml(prompt: string): string {
     return `<span style="opacity:0;animation:fadeIn .4s ease ${d}s forwards">${kw.icon}\u2009${kw.text}</span>`;
   }).join(kwSep);
 
-  const glintCardBg = 'linear-gradient(135deg,rgba(60,70,130,0.85),rgba(70,45,100,0.85))';
+  const glintCardBg = 'linear-gradient(135deg,rgba(36,52,92,0.90),rgba(20,31,62,0.86))';
   const glintStatus = isIdle ? '就绪' : '创作中';
   const glintBody = isIdle
     ? '选择一个场景，让 AI 为你创作此刻的锁屏。'
@@ -426,14 +427,21 @@ export function buildBridgeHtml(prompt: string): string {
     `<div style="height:100%;width:30%;border-radius:1px;background:${pal.accent};animation:loadBar 2s ease-in-out infinite"></div>` +
     `</div>`;
 
+  const glintMark = buildGlintHaloSvg({
+    size: 16,
+    strokeColor: 'rgba(235,243,255,0.92)',
+    outerStrokeColor: 'rgba(255,255,255,0.16)',
+    dotColor: '#ffffff',
+    glowColor: 'rgba(170,200,255,0.28)',
+  });
   const glintCard =
     `<div style="background:${glintCardBg};backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);` +
     `border:1px solid ${glintBorder};border-radius:16px;padding:12px 14px;animation:slideUp .45s ease ${glintDelay}s both">` +
     `<div style="display:flex;align-items:flex-start;gap:10px">` +
     `<div style="width:34px;height:34px;border-radius:9px;` +
-    `background:linear-gradient(135deg,#667eea,#764ba2);` +
+    `background:linear-gradient(135deg,rgba(168,196,255,0.22),rgba(86,116,182,0.12));border:1px solid rgba(255,255,255,0.10);` +
     `display:flex;align-items:center;justify-content:center;` +
-    `font-size:16px;color:#fff;flex-shrink:0">✦</div>` +
+    `font-size:16px;color:#fff;flex-shrink:0">${glintMark}</div>` +
     `<div style="flex:1;min-width:0">` +
     `<div style="display:flex;justify-content:space-between;align-items:center">` +
     `<span style="font-size:14px;font-weight:600;color:${cardText}">Glint 灵犀</span>` +
