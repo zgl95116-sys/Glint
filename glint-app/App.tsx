@@ -6,8 +6,6 @@ import type { PromptSource } from './services/geminiService';
 import { buildBridgeHtml } from './services/skeleton';
 import { PRESET_PROMPTS } from './constants/prompts';
 import { FLIGHT_DELAY_DELTA_HTML } from './constants/flightDelta';
-import { PREFAB_AMBIENT_BOOT } from './constants/prefabs';
-
 type Screen = 'home' | 'lockscreen';
 
 const STREAM_COMMIT_INTERVAL_MS = 100;
@@ -255,13 +253,48 @@ const App: React.FC = () => {
     setSheetOpen(true);
   }, []);
 
-  // Boot with a prefab — instant, guaranteed beautiful, no Gemini dependency.
+  // Lock the sheet overlay — prevent any touch-drag from shifting the page.
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const sheet = sheetRef.current;
+    const panel = panelRef.current;
+    if (!sheet || !panel) return;
+
+    // Block all touchmove on the backdrop (non-scrollable area)
+    const blockTouch = (e: TouchEvent) => { e.preventDefault(); };
+    sheet.addEventListener('touchmove', blockTouch, { passive: false });
+
+    // For the panel: allow internal scroll, but block overscroll at boundaries
+    let lastY = 0;
+    const onStart = (e: TouchEvent) => { lastY = e.touches[0].clientY; };
+    const onMove = (e: TouchEvent) => {
+      const y = e.touches[0].clientY;
+      const dy = y - lastY;
+      const atTop = panel.scrollTop <= 0;
+      const atBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 1;
+      if ((atTop && dy > 0) || (atBottom && dy < 0)) {
+        e.preventDefault();
+      }
+      lastY = y;
+    };
+    panel.addEventListener('touchstart', onStart, { passive: true });
+    panel.addEventListener('touchmove', onMove, { passive: false });
+
+    return () => {
+      sheet.removeEventListener('touchmove', blockTouch);
+      panel.removeEventListener('touchstart', onStart);
+      panel.removeEventListener('touchmove', onMove);
+    };
+  }, [sheetOpen]);
+
+  // Boot: show lockscreen screenshot + Glint card as initial state.
   const didBootRef = useRef(false);
   useEffect(() => {
     if (didBootRef.current) return;
     didBootRef.current = true;
-    handleGenerate('ambient boot', 'preset', PREFAB_AMBIENT_BOOT);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    setHtmlContent(buildBridgeHtml(''));
   }, []);
 
   return (
@@ -278,8 +311,8 @@ const App: React.FC = () => {
       </div>
 
       {sheetOpen && (
-        <div className="app-sheet" onClick={() => setSheetOpen(false)}>
-          <div className="app-sheet-panel" onClick={(e) => e.stopPropagation()}>
+        <div ref={sheetRef} className="app-sheet" onClick={() => setSheetOpen(false)}>
+          <div ref={panelRef} className="app-sheet-panel" onClick={(e) => e.stopPropagation()}>
             <HomeScreen
               onGenerate={(prompt, source, prefabHtml) => {
                 setSheetOpen(false);

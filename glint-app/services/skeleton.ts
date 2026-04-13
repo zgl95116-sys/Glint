@@ -408,14 +408,23 @@ export function buildBridgeHtml(prompt: string): string {
   }).join('');
 
   // ── Glint card with keywords + loading ──
+  const isIdle = !prompt.trim();
   const glintDelay = (0.35 + notifs.length * 0.12).toFixed(2);
   const kwSep = `<span style="color:${cardDim};margin:0 3px">·</span>`;
-  const kwLine = keywords.slice(0, 4).map((kw, i) => {
+  const kwLine = isIdle ? '' : keywords.slice(0, 4).map((kw, i) => {
     const d = (parseFloat(glintDelay) + 0.3 + i * 0.15).toFixed(2);
     return `<span style="opacity:0;animation:fadeIn .4s ease ${d}s forwards">${kw.icon}\u2009${kw.text}</span>`;
   }).join(kwSep);
 
   const glintCardBg = 'linear-gradient(135deg,rgba(60,70,130,0.85),rgba(70,45,100,0.85))';
+  const glintStatus = isIdle ? '就绪' : '创作中';
+  const glintBody = isIdle
+    ? '选择一个场景，让 AI 为你创作此刻的锁屏。'
+    : `正在为你创作「${scene}」...`;
+  const glintLoadBar = isIdle ? '' :
+    `<div style="margin-top:8px;height:2px;border-radius:1px;background:rgba(255,255,255,0.12);overflow:hidden">` +
+    `<div style="height:100%;width:30%;border-radius:1px;background:${pal.accent};animation:loadBar 2s ease-in-out infinite"></div>` +
+    `</div>`;
 
   const glintCard =
     `<div style="background:${glintCardBg};backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);` +
@@ -428,13 +437,11 @@ export function buildBridgeHtml(prompt: string): string {
     `<div style="flex:1;min-width:0">` +
     `<div style="display:flex;justify-content:space-between;align-items:center">` +
     `<span style="font-size:14px;font-weight:600;color:${cardText}">Glint 灵犀</span>` +
-    `<span style="font-size:12px;color:rgba(180,190,255,0.95);animation:shimmer 2s ease infinite">创作中</span>` +
+    `<span style="font-size:12px;color:rgba(180,190,255,0.95);animation:shimmer 2s ease infinite">${glintStatus}</span>` +
     `</div>` +
-    `<div style="font-size:13px;color:rgba(255,255,255,0.95);line-height:1.45;margin-top:4px">正在为你创作「${scene}」...</div>` +
+    `<div style="font-size:13px;color:rgba(255,255,255,0.95);line-height:1.45;margin-top:4px">${glintBody}</div>` +
     (kwLine ? `<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:6px;line-height:1.6;display:flex;flex-wrap:wrap;align-items:center;gap:2px">${kwLine}</div>` : '') +
-    `<div style="margin-top:8px;height:2px;border-radius:1px;background:rgba(255,255,255,0.12);overflow:hidden">` +
-    `<div style="height:100%;width:30%;border-radius:1px;background:${pal.accent};animation:loadBar 2s ease-in-out infinite"></div>` +
-    `</div>` +
+    glintLoadBar +
     `</div></div></div>`;
 
   return (
