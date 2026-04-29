@@ -6,10 +6,6 @@ dist/
 .superpowers/
 android/app/build/
 
-# harness
-harness/logs/
-harness/screenshots/iter-*.png
-
 # build outputs
 glint-app/dist/
 glint-app/dist_new/
@@ -17,10 +13,14 @@ glint-app/dist_new/
 # test / MCP artifacts
 .playwright-mcp/
 
-# precursor project, reference only (see CLAUDE.md)
+# precursor project, reference only
 flash-lite-browser/
 
-# Word temp lock files
+# Internal-only content (not for open-source repo)
+harness/
+lockscreen_example/
+docs/superpowers/
+*.docx
 .~*.docx
 ~$*.docx
 
