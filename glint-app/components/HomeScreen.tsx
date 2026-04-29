@@ -151,7 +151,7 @@ const AMBIENT_THUMB_HUE: Record<string, number> = {
 };
 
 const AmbientThumb: React.FC<{ p: PresetPrompt }> = ({ p }) => {
-  const emoji = Array.from(p.label)[0];
+  const emoji: string = [...p.label][0] ?? '';
   const hue = AMBIENT_THUMB_HUE[emoji] ?? 220;
   // 不同氛围用不同的极简 SVG 缩略图
   return (
