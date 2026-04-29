@@ -1,11 +1,23 @@
-import React, { startTransition, useState, useCallback, useRef, useEffect } from 'react';
+import React, { startTransition, useState, useCallback, useRef } from 'react';
 import { HomeScreen } from './components/HomeScreen';
 import { LockScreen } from './components/LockScreen';
-import { streamPageGeneration } from './services/geminiService';
+import { ApiKeySetup } from './components/ApiKeySetup';
+import { streamPageGeneration, resetClient } from './services/geminiService';
 import type { PromptSource } from './services/geminiService';
+import { hasApiKey, clearApiKey } from './services/apiKeyStore';
 import { buildBridgeHtml } from './services/skeleton';
 import { PRESET_PROMPTS } from './constants/prompts';
 import { FLIGHT_DELAY_DELTA_HTML } from './constants/flightDelta';
+
+// 从 prompt 反查场景标签：preset 直接用 label，custom 截取前 14 字 + …
+function labelForPrompt(prompt: string, source: PromptSource): string {
+  if (source === 'preset') {
+    const hit = PRESET_PROMPTS.find((p) => p.prompt === prompt);
+    if (hit) return hit.label;
+  }
+  const trimmed = prompt.replace(/\s+/g, ' ').trim();
+  return trimmed.length > 14 ? trimmed.slice(0, 14) + '…' : trimmed;
+}
 type Screen = 'home' | 'lockscreen';
 
 const STREAM_COMMIT_INTERVAL_MS = 100;
@@ -54,10 +66,12 @@ function repairStreamingHtml(partial: string): string {
 }
 
 const App: React.FC = () => {
+  const [keyReady, setKeyReady] = useState(() => hasApiKey());
   const [screen, setScreen] = useState<Screen>('lockscreen');
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [htmlContent, setHtmlContent] = useState('');
+  const [htmlContent, setHtmlContent] = useState(() => buildBridgeHtml(''));
   const [isLoading, setIsLoading] = useState(false);
+  const [sceneLabel, setSceneLabel] = useState<string>('');
   const [revealPhase, setRevealPhase] = useState<'idle' | 'blurred' | 'revealing'>('idle');
   const [sandboxSessionKey, setSandboxSessionKey] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
@@ -84,6 +98,7 @@ const App: React.FC = () => {
     }
     lastSandboxRuntimeRef.current = nextSandboxRuntime;
     setScreen('lockscreen');
+    setSceneLabel(labelForPrompt(prompt, promptSource));
 
     // ── Prefab path: skip Gemini, render pre-generated HTML directly ──
     if (prefabHtml) {
@@ -253,52 +268,20 @@ const App: React.FC = () => {
     setSheetOpen(true);
   }, []);
 
-  // Lock the sheet overlay — block horizontal drag, allow vertical scroll in panel.
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const sheet = sheetRef.current;
-    const panel = panelRef.current;
-    if (!sheet || !panel) return;
-
-    // Block all touchmove on the backdrop (outside panel)
-    const blockTouch = (e: TouchEvent) => { e.preventDefault(); };
-    sheet.addEventListener('touchmove', blockTouch, { passive: false });
-
-    // Panel: allow vertical scroll, block horizontal drag, stop propagation to backdrop
-    let startX = 0;
-    let startY = 0;
-    const onStart = (e: TouchEvent) => {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-    };
-    const onMove = (e: TouchEvent) => {
-      e.stopPropagation(); // don't let backdrop's blockTouch fire
-      const dx = Math.abs(e.touches[0].clientX - startX);
-      const dy = Math.abs(e.touches[0].clientY - startY);
-      // Block if horizontal drag dominates
-      if (dx > dy && dx > 5) {
-        e.preventDefault();
-      }
-    };
-    panel.addEventListener('touchstart', onStart, { passive: true });
-    panel.addEventListener('touchmove', onMove, { passive: false });
-
-    return () => {
-      sheet.removeEventListener('touchmove', blockTouch);
-      panel.removeEventListener('touchstart', onStart);
-      panel.removeEventListener('touchmove', onMove);
-    };
-  }, [sheetOpen]);
-
-  // Boot: show lockscreen screenshot + Glint card as initial state.
   const didBootRef = useRef(false);
-  useEffect(() => {
-    if (didBootRef.current) return;
-    didBootRef.current = true;
-    setHtmlContent(buildBridgeHtml(''));
+
+  const handleResetApiKey = useCallback(() => {
+    if (!confirm('要重置 API Key 吗？需要重新输入。')) return;
+    if (abortRef.current) abortRef.current.abort();
+    clearApiKey();
+    resetClient();
+    setSheetOpen(false);
+    setKeyReady(false);
   }, []);
+
+  if (!keyReady) {
+    return <ApiKeySetup onReady={() => setKeyReady(true)} />;
+  }
 
   return (
     <div className="app-shell">
@@ -309,18 +292,20 @@ const App: React.FC = () => {
           isActive={true}
           revealPhase={revealPhase}
           sandboxSessionKey={sandboxSessionKey}
+          sceneLabel={sceneLabel}
           onBack={handleBack}
         />
       </div>
 
       {sheetOpen && (
-        <div ref={sheetRef} className="app-sheet" onClick={() => setSheetOpen(false)}>
-          <div ref={panelRef} className="app-sheet-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="app-sheet" onClick={() => setSheetOpen(false)}>
+          <div className="app-sheet-panel" onClick={(e) => e.stopPropagation()}>
             <HomeScreen
               onGenerate={(prompt, source, prefabHtml) => {
                 setSheetOpen(false);
                 handleGenerate(prompt, source, prefabHtml);
               }}
+              onResetApiKey={handleResetApiKey}
             />
           </div>
         </div>

@@ -26,10 +26,10 @@ export function buildGlintHaloSvg({
   return (
     `<svg${cls} width="${size}" height="${size}" viewBox="0 0 ${viewBox} ${viewBox}" fill="none" ` +
     `xmlns="http://www.w3.org/2000/svg" aria-hidden="true">` +
-    `<circle cx="12" cy="12" r="8.2" stroke="${outerStrokeColor}" stroke-width="${softWidth}"/>` +
-    `<circle cx="12" cy="12" r="5.6" stroke="${strokeColor}" stroke-width="${ringWidth}"/>` +
-    `<circle cx="12" cy="12" r="2.15" fill="${dotColor}"/>` +
-    `<circle cx="12" cy="12" r="2.9" fill="${glowColor}"/>` +
+    `<circle cx="12" cy="12" r="11.2" stroke="${outerStrokeColor}" stroke-width="${softWidth}"/>` +
+    `<circle cx="12" cy="12" r="8.5" stroke="${strokeColor}" stroke-width="${ringWidth}"/>` +
+    `<circle cx="12" cy="12" r="2.4" fill="${dotColor}"/>` +
+    `<circle cx="12" cy="12" r="3.8" fill="${glowColor}"/>` +
     `</svg>`
   );
 }

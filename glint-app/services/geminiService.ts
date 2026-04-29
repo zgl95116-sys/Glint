@@ -1,7 +1,53 @@
 import { GoogleGenAI } from '@google/genai';
+import { getApiKey } from './apiKeyStore';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const MODEL_NAME = 'gemini-3.1-flash-lite-preview';
+
+export class MissingApiKeyError extends Error {
+  constructor() {
+    super('GEMINI_API_KEY_MISSING');
+    this.name = 'MissingApiKeyError';
+  }
+}
+
+let cachedClient: GoogleGenAI | null = null;
+let cachedClientKey = '';
+
+function getClient(): GoogleGenAI {
+  const key = getApiKey();
+  if (!key) throw new MissingApiKeyError();
+  if (!cachedClient || cachedClientKey !== key) {
+    cachedClient = new GoogleGenAI({ apiKey: key });
+    cachedClientKey = key;
+    // Reset state derived from the previous key so the new key gets a clean run.
+    cachedContentName = null;
+    cacheBootstrapped = false;
+    cacheDisabled = false;
+  }
+  return cachedClient;
+}
+
+/**
+ * Tries the supplied key against Gemini with a 1-token request.
+ * Resolves on success; rejects with the provider error on failure.
+ */
+export async function validateApiKey(key: string): Promise<void> {
+  const probe = new GoogleGenAI({ apiKey: key.trim() });
+  await probe.models.generateContent({
+    model: MODEL_NAME,
+    contents: 'hi',
+    config: { maxOutputTokens: 1 },
+  });
+}
+
+/** Discard cached client + cache state so the next call picks up a new key. */
+export function resetClient(): void {
+  cachedClient = null;
+  cachedClientKey = '';
+  cachedContentName = null;
+  cacheBootstrapped = false;
+  cacheDisabled = false;
+}
 
 export type PromptSource = 'preset' | 'custom';
 
@@ -24,8 +70,14 @@ let keepAliveInFlight = false;
 
 function sendPing() {
   if (keepAliveInFlight) return;
+  let client: GoogleGenAI;
+  try {
+    client = getClient();
+  } catch {
+    return; // No key yet — skip warmup silently.
+  }
   keepAliveInFlight = true;
-  ai.models
+  client.models
     .generateContent({
       model: MODEL_NAME,
       contents: 'hi',
@@ -54,19 +106,28 @@ function stopKeepAlive() {
 }
 
 function warmUpModel() {
+  // No-op when key missing; sendPing handles that gracefully.
   sendPing();
   scheduleKeepAlive(KEEPALIVE_INTERVAL_MS);
 }
 
-if (typeof window !== 'undefined') {
-  // Fire warmup immediately — every ms of prewarming saves TTFB on first gen.
+/** Called by the UI once a valid key is set, to kick off prewarming + cache bootstrap. */
+export function onApiKeyReady(): void {
+  resetClient();
   warmUpModel();
+  if (typeof window !== 'undefined') bootstrapCache();
+}
+
+if (typeof window !== 'undefined') {
+  // Auto-warmup only if a key is already saved from a previous session.
+  // Otherwise wait for onApiKeyReady() to be called after the user enters a key.
+  if (getApiKey()) warmUpModel();
 
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         stopKeepAlive();
-      } else {
+      } else if (getApiKey()) {
         // Resume quickly — user just came back, connection may already be dead.
         sendPing();
         scheduleKeepAlive(KEEPALIVE_INTERVAL_MS);
@@ -243,9 +304,15 @@ let cacheDisabled = false;
 
 async function bootstrapCache(): Promise<void> {
   if (cacheBootstrapped || cacheDisabled) return;
+  let client: GoogleGenAI;
+  try {
+    client = getClient();
+  } catch {
+    return; // No key — cache bootstrap will retry once key is set.
+  }
   cacheBootstrapped = true;
   try {
-    const cache = await ai.caches.create({
+    const cache = await client.caches.create({
       model: MODEL_NAME,
       config: {
         contents: FEW_SHOT_EXAMPLES.flatMap((ex) => [
@@ -265,7 +332,7 @@ async function bootstrapCache(): Promise<void> {
   }
 }
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && getApiKey()) {
   bootstrapCache();
 }
 
@@ -388,7 +455,7 @@ export async function* streamPageGeneration(
     const t0 = performance.now();
     console.log(`[PERF] stream_request_start ts=${t0.toFixed(1)}`);
 
-    const responseStream = await ai.models.generateContentStream({
+    const responseStream = await getClient().models.generateContentStream({
       model: MODEL_NAME,
       contents,
       config: config as any,

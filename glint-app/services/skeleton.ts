@@ -428,7 +428,7 @@ export function buildBridgeHtml(prompt: string): string {
     `</div>`;
 
   const glintMark = buildGlintHaloSvg({
-    size: 16,
+    size: 28,
     strokeColor: 'rgba(235,243,255,0.92)',
     outerStrokeColor: 'rgba(255,255,255,0.16)',
     dotColor: '#ffffff',

@@ -21,20 +21,21 @@
         display: flex;
         align-items: flex-end;
         animation: sheet-fade 220ms ease both;
-        touch-action: none;
         overscroll-behavior: none;
       }
       .app-sheet-panel {
         width: 100%;
         max-height: 80%;
-        background: rgba(20, 20, 24, 0.92);
+        background:
+          radial-gradient(ellipse at 26% 16%, rgba(92, 114, 255, 0.22) 0%, transparent 56%),
+          radial-gradient(ellipse at 74% 72%, rgba(92, 217, 255, 0.14) 0%, transparent 48%),
+          linear-gradient(180deg, #07101d 0%, #0a1326 100%);
         border-top-left-radius: 24px;
         border-top-right-radius: 24px;
         padding: 24px 20px 32px;
         overflow-y: auto;
         animation: sheet-rise 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
         overscroll-behavior: contain;
-        touch-action: pan-y;
         -webkit-overflow-scrolling: touch;
       }
       @keyframes sheet-fade {

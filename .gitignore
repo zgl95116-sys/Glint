@@ -28,3 +28,5 @@ flash-lite-browser/
 /test*.png
 /opt-test*.png
 /skeleton-dark.png
+*.apk
+Glint-demo.apk

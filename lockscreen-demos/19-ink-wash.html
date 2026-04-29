@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glint - Ink Wash Landscape</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            background-color: #f5f0e8;
+            font-family: 'Noto Serif CJK SC', 'SimSun', serif;
+            display: flex;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glint-label {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            font-size: 10px;
+            color: rgba(0, 0, 0, 0.3);
+            letter-spacing: 2px;
+            font-weight: 300;
+        }
+
+        .poem {
+            position: absolute;
+            top: 24px;
+            left: 20px;
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.25);
+            font-style: italic;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="poem">山高月小<br/>水落石出</div>
+    <div class="glint-label">GLINT</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Responsive canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // ==================== Ink Wash System ====================
+        class InkParticle {
+            constructor(x, y, intensity = 1) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.radius = Math.random() * 8 + 3;
+                this.maxRadius = this.radius * 2.5;
+                this.opacity = Math.min(intensity * 0.6, 0.8);
+                this.life = 1;
+                this.age = 0;
+                this.maxAge = 120 + Math.random() * 80;
+            }
+
+            update() {
+                // Random walk diffusion
+                this.vx += (Math.random() - 0.5) * 0.3;
+                this.vy += (Math.random() - 0.5) * 0.3;
+                this.vx *= 0.96;
+                this.vy *= 0.96;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Expand radius organically
+                this.radius += (this.maxRadius - this.radius) * 0.05;
+
+                // Fade over time
+                this.age++;
+                this.life = 1 - (this.age / this.maxAge);
+                this.opacity *= 0.99;
+            }
+
+            draw(ctx) {
+                if (this.life <= 0) return;
+                ctx.globalAlpha = this.opacity * this.life * 0.6;
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            isDead() {
+                return this.life <= 0.01 || this.opacity < 0.01;
+            }
+        }
+
+        // ==================== Noise-like Mountain Generation ====================
+        function perlinLike(x, scale = 0.005) {
+            let val = 0;
+            let amp = 1;
+            let freq = 1;
+            for (let i = 0; i < 4; i++) {
+                val += amp * Math.sin(x * freq * scale + i * 12.34);
+                amp *= 0.6;
+                freq *= 2;
+            }
+            return val;
+        }
+
+        // ==================== Landscape State ====================
+        let landscape = {
+            mountains: [],
+            moon: null,
+            regenerateTime: 0,
+            regenerateInterval: 17000 + Math.random() * 3000
+        };
+
+        let ink = {
+            particles: [],
+            lastTouchTime: 0,
+            touchCooldown: 50
+        };
+
+        function generateMountains() {
+            landscape.mountains = [];
+
+            // Far mountains (very faint)
+            landscape.mountains.push({
+                y: canvas.height * 0.4,
+                opacity: 0.06,
+                amplitude: canvas.height * 0.12,
+                frequency: 0.002,
+                phase: Math.random() * Math.PI * 2,
+                color: '#333333'
+            });
+
+            // Middle-far mountains
+            landscape.mountains.push({
+                y: canvas.height * 0.5,
+                opacity: 0.12,
+                amplitude: canvas.height * 0.15,
+                frequency: 0.0025,
+                phase: Math.random() * Math.PI * 2,
+                color: '#1a1a1a'
+            });
+
+            // Middle mountains
+            landscape.mountains.push({
+                y: canvas.height * 0.62,
+                opacity: 0.22,
+                amplitude: canvas.height * 0.18,
+                frequency: 0.003,
+                phase: Math.random() * Math.PI * 2,
+                color: '#0d0d0d'
+            });
+
+            // Near mountains (darkest)
+            landscape.mountains.push({
+                y: canvas.height * 0.75,
+                opacity: 0.35,
+                amplitude: canvas.height * 0.2,
+                frequency: 0.0035,
+                phase: Math.random() * Math.PI * 2,
+                color: '#000000'
+            });
+
+            // Moon/sun
+            landscape.moon = {
+                x: canvas.width * (0.25 + Math.random() * 0.2),
+                y: canvas.height * (0.15 + Math.random() * 0.1),
+                radius: canvas.height * 0.08,
+                opacity: 0.08
+            };
+
+            landscape.regenerateTime = performance.now();
+        }
+
+        function drawMountain(mountain, index) {
+            ctx.globalAlpha = mountain.opacity;
+            ctx.fillStyle = mountain.color;
+            ctx.beginPath();
+            ctx.moveTo(0, mountain.y);
+
+            for (let x = 0; x <= canvas.width; x += 3) {
+                const noise = perlinLike(x + mountain.phase * 1000, mountain.frequency);
+                const y = mountain.y - noise * mountain.amplitude;
+                if (x === 0) {
+                    ctx.lineTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawMoon() {
+            if (!landscape.moon) return;
+            ctx.globalAlpha = landscape.moon.opacity;
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(landscape.moon.x, landscape.moon.y, landscape.moon.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawMist() {
+            ctx.globalAlpha = 0.04;
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i < 4; i++) {
+                const y = canvas.height * (0.45 + i * 0.1);
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                for (let x = 0; x <= canvas.width; x += 40) {
+                    const offset = perlinLike(x * 0.001 + i) * 3;
+                    ctx.lineTo(x, y + offset);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function drawTreeSilhouettes() {
+            ctx.globalAlpha = 0.28;
+            ctx.fillStyle = '#1a1a1a';
+
+            // Draw simple pine trees on the nearest mountain
+            const treePositions = [
+                { x: canvas.width * 0.15, scale: 0.8 },
+                { x: canvas.width * 0.35, scale: 1 },
+                { x: canvas.width * 0.55, scale: 0.7 },
+                { x: canvas.width * 0.75, scale: 0.9 }
+            ];
+
+            treePositions.forEach(pos => {
+                drawPineTree(pos.x, canvas.height * 0.68, pos.scale);
+            });
+        }
+
+        function drawPineTree(x, y, scale) {
+            const h = canvas.height * 0.15 * scale;
+            const w = canvas.height * 0.08 * scale;
+
+            // Trunk
+            ctx.fillRect(x - w * 0.15, y, w * 0.3, h * 0.3);
+
+            // Triangle canopy (layered)
+            ctx.beginPath();
+            ctx.moveTo(x, y - h);
+            ctx.lineTo(x - w * 0.6, y - h * 0.3);
+            ctx.lineTo(x + w * 0.6, y - h * 0.3);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y - h * 0.6);
+            ctx.lineTo(x - w * 0.5, y - h * 0.15);
+            ctx.lineTo(x + w * 0.5, y - h * 0.15);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawBoat() {
+            ctx.globalAlpha = 0.15;
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5;
+            ctx.fillStyle = '#000000';
+
+            const boatX = canvas.width * 0.5;
+            const boatY = canvas.height * 0.7;
+
+            // Hull
+            ctx.beginPath();
+            ctx.ellipse(boatX, boatY, canvas.height * 0.04, canvas.height * 0.02, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sail post
+            ctx.beginPath();
+            ctx.moveTo(boatX - canvas.height * 0.01, boatY - canvas.height * 0.02);
+            ctx.lineTo(boatX - canvas.height * 0.01, boatY - canvas.height * 0.08);
+            ctx.stroke();
+
+            // Sail
+            ctx.globalAlpha = 0.1;
+            ctx.beginPath();
+            ctx.moveTo(boatX - canvas.height * 0.01, boatY - canvas.height * 0.08);
+            ctx.lineTo(boatX + canvas.height * 0.03, boatY - canvas.height * 0.04);
+            ctx.lineTo(boatX - canvas.height * 0.01, boatY);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // ==================== Ink Interaction ====================
+        function handleTouchStart(e) {
+            const now = performance.now();
+            if (now - ink.lastTouchTime < ink.touchCooldown) return;
+            ink.lastTouchTime = now;
+
+            const rect = canvas.getBoundingClientRect();
+            Array.from(e.touches).forEach(touch => {
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+
+                // Spawn multiple ink particles for smooth spread
+                for (let i = 0; i < 8; i++) {
+                    const intensity = 0.6 + Math.random() * 0.4;
+                    ink.particles.push(new InkParticle(x, y, intensity));
+                }
+            });
+        }
+
+        function handleTouchMove(e) {
+            const now = performance.now();
+            if (now - ink.lastTouchTime < ink.touchCooldown) return;
+            ink.lastTouchTime = now;
+
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+
+            Array.from(e.touches).forEach(touch => {
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+
+                for (let i = 0; i < 4; i++) {
+                    const intensity = 0.5 + Math.random() * 0.3;
+                    ink.particles.push(new InkParticle(x, y, intensity));
+                }
+            });
+        }
+
+        canvas.addEventListener('touchstart', handleTouchStart, false);
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+        // Mouse support for desktop
+        let isMouseDown = false;
+        canvas.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            for (let i = 0; i < 8; i++) {
+                ink.particles.push(new InkParticle(x, y, 0.7));
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isMouseDown) return;
+            const now = performance.now();
+            if (now - ink.lastTouchTime < ink.touchCooldown) return;
+            ink.lastTouchTime = now;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            for (let i = 0; i < 4; i++) {
+                ink.particles.push(new InkParticle(x, y, 0.5));
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        // ==================== Animation Loop ====================
+        function animate() {
+            // Background
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#f5f0e8';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle texture
+            ctx.globalAlpha = 0.02;
+            for (let i = 0; i < 10; i++) {
+                ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.1})`;
+                ctx.fillRect(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height,
+                    Math.random() * 40 + 10,
+                    Math.random() * 40 + 10
+                );
+            }
+
+            ctx.globalAlpha = 1;
+
+            // Draw landscape
+            landscape.mountains.forEach((mountain, index) => {
+                drawMountain(mountain, index);
+            });
+
+            drawMoon();
+            drawMist();
+            drawBoat();
+            drawTreeSilhouettes();
+
+            // Update and draw ink particles
+            ctx.globalAlpha = 1;
+            ink.particles = ink.particles.filter(p => !p.isDead());
+            ink.particles.forEach(p => {
+                p.update();
+                p.draw(ctx);
+            });
+
+            // Check if landscape needs regeneration
+            const now = performance.now();
+            if (now - landscape.regenerateTime > landscape.regenerateInterval) {
+                generateMountains();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize and start
+        generateMountains();
+        animate();
+
+        // Handle window blur (pause) and focus (resume)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Optional: reset state on hide
+            }
+        });
+    </script>
+</body>
+</html>

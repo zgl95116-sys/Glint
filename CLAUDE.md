@@ -37,8 +37,9 @@ Glint/
 
 ## Security
 
-- `GEMINI_API_KEY` lives in `glint-app/.env.local` — NEVER commit.
-- Always check `git diff --cached | grep -i AIza` before committing.
+- **No API key in the repo or build artifacts.** The user enters their Gemini API key on first launch; it persists in WebView `localStorage` via `services/apiKeyStore.ts`. `vite.config.ts` does NOT inject any key at compile time.
+- Before committing, sanity-check no key snuck in: `git diff --cached | grep -iE 'AIza[A-Za-z0-9_-]{20,}'`.
+- APKs are gitignored — never commit a built APK; it would embed whatever key was in localStorage at build time only if `vite define` is reintroduced (don't).
 - Sandbox iframe: `sandbox="allow-scripts"` only. Never add same-origin/forms/popups.
 
 ## Running things

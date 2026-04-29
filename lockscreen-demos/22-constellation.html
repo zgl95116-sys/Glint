@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>连星座 — Glint Lockscreen Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #0a0e27;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1428 100%);
+        }
+
+        .ui-footer {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 2px;
+            font-weight: 300;
+            pointer-events: none;
+        }
+
+        .counter {
+            position: fixed;
+            top: 40px;
+            right: 30px;
+            font-size: 14px;
+            color: rgba(255, 215, 100, 0.8);
+            font-weight: 300;
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+
+        .instruction {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 1px;
+            pointer-events: none;
+            opacity: 0;
+            animation: fadeInOut 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="counter" id="counter">已连 0 颗星</div>
+    <div class="instruction">轻点或拖拽在星星之间画线</div>
+    <div class="ui-footer">GLINT · 画你的星座</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let animationFrameId = null;
+
+        // Resize canvas to fill window
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // ==================== Star Data ====================
+        const stars = [];
+        const constellations = [];
+        const shootingStars = [];
+        const connectedStarCount = { value: 0 };
+
+        const STAR_COUNT = 45;
+        const BRIGHT_STAR_COUNT = 6;
+        const ACTIVATION_RADIUS = 30;
+        const CONSTELLATION_NAMES = ['北辰', '织女', '归途', '初心', '远方', '沙漠', '灯塔', '月下', '星河', '永恒'];
+
+        // Initialize stars
+        function initStars() {
+            stars.length = 0;
+            for (let i = 0; i < STAR_COUNT; i++) {
+                const isBright = i < BRIGHT_STAR_COUNT;
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: isBright ? 6 + Math.random() * 2 : 2 + Math.random() * 3,
+                    brightness: 0.5 + Math.random() * 0.5,
+                    twinklePhase: Math.random() * Math.PI * 2,
+                    twinkleSpeed: 0.01 + Math.random() * 0.02,
+                    isBright: isBright,
+                    isActivated: false,
+                    connections: [],
+                    pulsePhase: 0
+                });
+            }
+        }
+        initStars();
+
+        // ==================== Input Handling ====================
+        let currentStar = null;
+        let isDrawing = false;
+        let mouseX = 0;
+        let mouseY = 0;
+
+        function getStarAtPosition(x, y) {
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const star = stars[i];
+                const dist = Math.hypot(star.x - x, star.y - y);
+                if (dist < ACTIVATION_RADIUS) {
+                    return star;
+                }
+            }
+            return null;
+        }
+
+        function onPointerDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            mouseX = x;
+            mouseY = y;
+
+            const star = getStarAtPosition(x, y);
+            if (star) {
+                currentStar = star;
+                isDrawing = true;
+                star.isActivated = true;
+            }
+        }
+
+        function onPointerMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+
+            if (!isDrawing) {
+                // Update activation state for nearby stars
+                stars.forEach(star => {
+                    const dist = Math.hypot(star.x - mouseX, star.y - mouseY);
+                    star.isActivated = dist < ACTIVATION_RADIUS;
+                });
+            }
+        }
+
+        function onPointerUp(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (isDrawing && currentStar) {
+                const targetStar = getStarAtPosition(x, y);
+
+                if (targetStar && targetStar !== currentStar) {
+                    // Create connection
+                    const startIdx = stars.indexOf(currentStar);
+                    const endIdx = stars.indexOf(targetStar);
+
+                    if (startIdx !== -1 && endIdx !== -1) {
+                        // Avoid duplicates
+                        if (!currentStar.connections.includes(endIdx)) {
+                            currentStar.connections.push(endIdx);
+                        }
+                        if (!targetStar.connections.includes(startIdx)) {
+                            targetStar.connections.push(startIdx);
+                        }
+
+                        connectedStarCount.value = countConnectedStars();
+                        checkForConstellations();
+                    }
+                } else if (!targetStar) {
+                    // Create shooting star at click position
+                    createShootingStar(currentStar.x, currentStar.y, x, y);
+                }
+            }
+
+            isDrawing = false;
+            currentStar = null;
+            stars.forEach(star => star.isActivated = false);
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        canvas.addEventListener('mouseup', onPointerUp);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            onPointerDown(touch);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            onPointerMove(touch);
+        });
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            onPointerUp(touch);
+        });
+
+        // ==================== Shooting Star ====================
+        function createShootingStar(fromX, fromY, toX, toY) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            const speed = 8;
+            shootingStars.push({
+                x: fromX,
+                y: fromY,
+                angle: angle,
+                speed: speed,
+                length: 60,
+                life: 1.0,
+                decay: 0.02
+            });
+        }
+
+        // ==================== Constellation Detection ====================
+        function countConnectedStars() {
+            const visited = new Set();
+            stars.forEach((star, idx) => {
+                if (star.connections.length > 0) {
+                    visited.add(idx);
+                }
+            });
+            return visited.size;
+        }
+
+        function checkForConstellations() {
+            // Find all connected components with 3+ stars
+            const visited = new Set();
+            const newConstellations = [];
+
+            function dfs(startIdx, component) {
+                if (visited.has(startIdx)) return;
+                visited.add(startIdx);
+                component.push(startIdx);
+
+                const star = stars[startIdx];
+                star.connections.forEach(connIdx => {
+                    dfs(connIdx, component);
+                });
+            }
+
+            for (let i = 0; i < stars.length; i++) {
+                if (!visited.has(i) && stars[i].connections.length > 0) {
+                    const component = [];
+                    dfs(i, component);
+                    if (component.length >= 3) {
+                        newConstellations.push({
+                            starIndices: component,
+                            name: CONSTELLATION_NAMES[Math.floor(Math.random() * CONSTELLATION_NAMES.length)],
+                            created: Date.now(),
+                            pulsePhase: 0
+                        });
+                    }
+                }
+            }
+
+            // Add only new constellations
+            newConstellations.forEach(newConst => {
+                const isDuplicate = constellations.some(existing => {
+                    const existingSet = new Set(existing.starIndices);
+                    const newSet = new Set(newConst.starIndices);
+                    return existingSet.size === newSet.size &&
+                           [...existingSet].every(v => newSet.has(v));
+                });
+                if (!isDuplicate) {
+                    constellations.push(newConst);
+                }
+            });
+        }
+
+        // ==================== Drawing ====================
+        function drawNebula() {
+            const gradient = ctx.createRadialGradient(
+                canvas.width * 0.8, canvas.height * 0.2, 0,
+                canvas.width * 0.8, canvas.height * 0.2, canvas.width * 0.6
+            );
+            gradient.addColorStop(0, 'rgba(138, 43, 226, 0.15)');
+            gradient.addColorStop(0.5, 'rgba(75, 0, 130, 0.08)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawStar(star, time) {
+            const dx = star.x;
+            const dy = star.y;
+            const size = star.size;
+
+            // Twinkling
+            const twinkling = 0.5 + 0.5 * Math.sin(star.twinklePhase + time * star.twinkleSpeed);
+            let opacity = star.brightness * twinkling;
+
+            // Activation pulse
+            if (star.isActivated) {
+                opacity = Math.min(1, opacity + 0.3);
+            }
+
+            // Draw glow
+            const glowGradient = ctx.createRadialGradient(dx, dy, 0, dx, dy, size * 3);
+            glowGradient.addColorStop(0, `rgba(255, 215, 100, ${opacity * 0.6})`);
+            glowGradient.addColorStop(1, 'rgba(255, 215, 100, 0)');
+            ctx.fillStyle = glowGradient;
+            ctx.beginPath();
+            ctx.arc(dx, dy, size * 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw core
+            ctx.fillStyle = `rgba(255, 240, 200, ${opacity})`;
+            ctx.beginPath();
+            ctx.arc(dx, dy, size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw bright star sparkle
+            if (star.isBright) {
+                const sparkleSize = size * 0.5;
+                ctx.strokeStyle = `rgba(255, 250, 220, ${opacity * 0.8})`;
+                ctx.lineWidth = 1;
+
+                // Horizontal line
+                ctx.beginPath();
+                ctx.moveTo(dx - size * 2.5, dy);
+                ctx.lineTo(dx + size * 2.5, dy);
+                ctx.stroke();
+
+                // Vertical line
+                ctx.beginPath();
+                ctx.moveTo(dx, dy - size * 2.5);
+                ctx.lineTo(dx, dy + size * 2.5);
+                ctx.stroke();
+
+                // Diagonal lines
+                ctx.beginPath();
+                ctx.moveTo(dx - size * 1.8, dy - size * 1.8);
+                ctx.lineTo(dx + size * 1.8, dy + size * 1.8);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(dx + size * 1.8, dy - size * 1.8);
+                ctx.lineTo(dx - size * 1.8, dy + size * 1.8);
+                ctx.stroke();
+            }
+        }
+
+        function drawConnections(time) {
+            ctx.lineWidth = 1;
+
+            stars.forEach((star, idx) => {
+                star.connections.forEach(connIdx => {
+                    if (connIdx > idx) { // Draw each line only once
+                        const target = stars[connIdx];
+                        const dist = Math.hypot(target.x - star.x, target.y - star.y);
+
+                        // Glow line (thick, transparent)
+                        ctx.strokeStyle = 'rgba(255, 215, 100, 0.15)';
+                        ctx.lineWidth = 6;
+                        ctx.beginPath();
+                        ctx.moveTo(star.x, star.y);
+                        ctx.lineTo(target.x, target.y);
+                        ctx.stroke();
+
+                        // Bright line
+                        ctx.strokeStyle = 'rgba(255, 240, 180, 0.8)';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(star.x, star.y);
+                        ctx.lineTo(target.x, target.y);
+                        ctx.stroke();
+                    }
+                });
+            });
+        }
+
+        function drawPreviewLine() {
+            if (isDrawing && currentStar) {
+                const dist = Math.hypot(mouseX - currentStar.x, mouseY - currentStar.y);
+
+                // Glow
+                ctx.strokeStyle = 'rgba(255, 215, 100, 0.2)';
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.moveTo(currentStar.x, currentStar.y);
+                ctx.lineTo(mouseX, mouseY);
+                ctx.stroke();
+
+                // Bright preview
+                ctx.strokeStyle = 'rgba(255, 240, 180, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(currentStar.x, currentStar.y);
+                ctx.lineTo(mouseX, mouseY);
+                ctx.stroke();
+            }
+        }
+
+        function drawShootingStars(time) {
+            shootingStars.forEach((ss, idx) => {
+                if (ss.life <= 0) {
+                    shootingStars.splice(idx, 1);
+                    return;
+                }
+
+                const trailLength = ss.length * ss.life;
+                const endX = ss.x + Math.cos(ss.angle) * ss.speed * 60;
+                const endY = ss.y + Math.sin(ss.angle) * ss.speed * 60;
+
+                // Trail glow
+                const gradient = ctx.createLinearGradient(ss.x, ss.y, endX, endY);
+                gradient.addColorStop(0, `rgba(255, 215, 100, ${ss.life * 0.8})`);
+                gradient.addColorStop(1, 'rgba(255, 215, 100, 0)');
+
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(ss.x, ss.y);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                // Bright core
+                ctx.strokeStyle = `rgba(255, 250, 220, ${ss.life})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(ss.x, ss.y);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                ss.life -= ss.decay;
+            });
+        }
+
+        function drawConstellationLabels(time) {
+            constellations.forEach(const_obj => {
+                const ageMs = Date.now() - const_obj.created;
+                if (ageMs > 8000) return; // Fade out after 8 seconds
+
+                // Calculate label position (center of stars)
+                let centerX = 0, centerY = 0;
+                const_obj.starIndices.forEach(idx => {
+                    centerX += stars[idx].x;
+                    centerY += stars[idx].y;
+                });
+                centerX /= const_obj.starIndices.length;
+                centerY /= const_obj.starIndices.length;
+
+                // Pulse and fade
+                const progress = ageMs / 8000;
+                const opacity = Math.max(0, 1 - progress) * 0.8;
+                const scale = 1 + Math.sin(time * 0.003) * 0.1;
+
+                ctx.fillStyle = `rgba(255, 215, 100, ${opacity})`;
+                ctx.font = `${14 * scale}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(const_obj.name, centerX, centerY - 30);
+            });
+
+            // Remove old constellations
+            constellations.forEach((const_obj, idx) => {
+                if (Date.now() - const_obj.created > 8000) {
+                    constellations.splice(idx, 1);
+                }
+            });
+        }
+
+        // ==================== Animation Loop ====================
+        let lastTime = Date.now();
+        function animate() {
+            const now = Date.now();
+            const time = now - lastTime;
+
+            // Clear canvas with gradient background
+            const bgGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            bgGradient.addColorStop(0, '#0a0e27');
+            bgGradient.addColorStop(0.5, '#1a1f3a');
+            bgGradient.addColorStop(1, '#0f1428');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw nebula
+            drawNebula();
+
+            // Draw all stars
+            stars.forEach(star => drawStar(star, now));
+
+            // Draw connections
+            drawConnections(now);
+
+            // Draw preview line
+            drawPreviewLine();
+
+            // Draw shooting stars
+            drawShootingStars(now);
+
+            // Draw constellation labels
+            drawConstellationLabels(now);
+
+            // Update counter
+            const counter = document.getElementById('counter');
+            counter.textContent = `已连 ${connectedStarCount.value} 颗星`;
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        });
+    </script>
+</body>
+</html>
