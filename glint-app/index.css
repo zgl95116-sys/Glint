@@ -164,6 +164,208 @@ html, body, #root {
   color: rgba(217, 228, 255, 0.32);
 }
 
+/* ─── Smart moment — selected by the product kernel ─────────── */
+
+.smart-moment {
+  position: relative;
+  width: 100%;
+  min-height: 154px;
+  padding: 18px 18px 16px;
+  border: 1px solid rgba(147, 197, 253, 0.2);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 16% 20%, rgba(96, 165, 250, 0.24), transparent 34%),
+    linear-gradient(145deg, rgba(18, 32, 61, 0.88), rgba(8, 13, 24, 0.82));
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+  box-shadow: 0 18px 40px rgba(20, 80, 180, 0.16);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.smart-moment:active {
+  transform: scale(0.99);
+  border-color: rgba(191, 219, 254, 0.3);
+}
+
+.smart-moment-high {
+  border-color: rgba(251, 146, 60, 0.36);
+  background:
+    radial-gradient(circle at 16% 20%, rgba(251, 146, 60, 0.28), transparent 34%),
+    linear-gradient(145deg, rgba(45, 24, 18, 0.9), rgba(8, 13, 24, 0.84));
+}
+
+.smart-moment-medium {
+  border-color: rgba(125, 211, 252, 0.28);
+}
+
+.smart-moment-orb {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(147, 197, 253, 0.48) 42%, transparent 72%);
+  box-shadow: 0 0 28px rgba(147, 197, 253, 0.42);
+  align-self: flex-start;
+}
+
+.smart-moment-high .smart-moment-orb {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(251, 146, 60, 0.55) 42%, transparent 72%);
+  box-shadow: 0 0 30px rgba(251, 146, 60, 0.42);
+}
+
+.smart-moment-main {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.smart-moment-kicker {
+  font-size: 11px;
+  letter-spacing: 1.7px;
+  color: rgba(191, 219, 254, 0.55);
+}
+
+.smart-moment-title {
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.smart-moment-voice {
+  font-size: 14px;
+  line-height: 1.45;
+  color: rgba(226, 232, 240, 0.72);
+}
+
+.smart-moment-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+.smart-moment-facts span {
+  max-width: 100%;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(226, 232, 240, 0.68);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.smart-moment-arrow {
+  align-self: center;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.36);
+  font-size: 28px;
+  font-weight: 200;
+}
+
+.signal-card {
+  border-radius: 18px;
+  padding: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.035)),
+    rgba(4, 9, 18, 0.4);
+  border: 1px solid rgba(205, 220, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.signal-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.signal-card-kicker {
+  font-size: 11px;
+  color: rgba(180, 199, 230, 0.58);
+}
+
+.signal-card-title {
+  margin-top: 2px;
+  color: rgba(244, 248, 255, 0.92);
+  font-size: 15px;
+  font-weight: 680;
+}
+
+.signal-refresh,
+.signal-action {
+  appearance: none;
+  border: 1px solid rgba(201, 219, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(234, 241, 255, 0.78);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.signal-refresh {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+.signal-list {
+  display: grid;
+  gap: 8px;
+}
+
+.signal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 50px;
+  padding: 10px 11px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.signal-name {
+  color: rgba(244, 248, 255, 0.86);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.signal-meta {
+  margin-top: 3px;
+  color: rgba(188, 204, 232, 0.52);
+  font-size: 11px;
+}
+
+.signal-action {
+  min-width: 62px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.signal-refresh:active,
+.signal-action:active {
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* ─── Rhythm rail — 一天 8 个时刻横向时间轴 ─────────── */
 
 .rhythm-rail {
@@ -668,6 +870,63 @@ html, body, #root {
   box-shadow: 0 0 6px oklch(0.82 0.14 250 / 0.7);
   animation: backLoadingPulse 1.4s ease-in-out infinite;
   flex-shrink: 0;
+}
+
+.lock-feedback {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+}
+
+.lock-feedback button {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 10px;
+  min-width: 42px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(245, 249, 255, 0.78);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lock-feedback button:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.lock-feedback-toast {
+  position: fixed;
+  bottom: 118px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  max-width: min(280px, calc(100vw - 48px));
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: rgba(7, 13, 24, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(245, 249, 255, 0.86);
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: center;
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  pointer-events: none;
 }
 
 @keyframes backLoadingPulse {

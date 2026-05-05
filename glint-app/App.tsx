@@ -1,24 +1,42 @@
-import React, { startTransition, useState, useCallback, useRef } from 'react';
-import { HomeScreen } from './components/HomeScreen';
+import React, { startTransition, useState, useCallback, useRef, useEffect } from 'react';
 import { LockScreen } from './components/LockScreen';
 import { ApiKeySetup } from './components/ApiKeySetup';
-import { streamPageGeneration, resetClient } from './services/geminiService';
 import type { PromptSource } from './services/geminiService';
 import { hasApiKey, clearApiKey } from './services/apiKeyStore';
 import { buildBridgeHtml } from './services/skeleton';
-import { PRESET_PROMPTS } from './constants/prompts';
-import { FLIGHT_DELAY_DELTA_HTML } from './constants/flightDelta';
+import { buildMomentPrompt, createDemoSignalSnapshot, resolveMoment } from './services/momentEngine';
+import type { ResolvedMoment } from './services/momentEngine';
+import { clearRenderCache, getCachedRender, saveCachedRender } from './services/renderCache';
+import {
+  clearUserMemory,
+  loadUserMemory,
+  preferencesFromMemory,
+  recordMomentFeedback,
+  recordMomentRendered,
+  renderHistoryFromMemory,
+} from './services/userMemory';
+import type { MomentFeedbackKind, UserMemoryState } from './services/userMemory';
+import {
+  getNativeSignalStatus,
+  loadNativeSignals,
+  openNotificationSignalSettings,
+  requestCalendarSignalPermission,
+  UNAVAILABLE_SIGNAL_STATUS,
+} from './services/nativeSignals';
 
 // 从 prompt 反查场景标签：preset 直接用 label，custom 截取前 14 字 + …
 function labelForPrompt(prompt: string, source: PromptSource): string {
   if (source === 'preset') {
-    const hit = PRESET_PROMPTS.find((p) => p.prompt === prompt);
-    if (hit) return hit.label;
+    return '预设场景';
   }
   const trimmed = prompt.replace(/\s+/g, ' ').trim();
   return trimmed.length > 14 ? trimmed.slice(0, 14) + '…' : trimmed;
 }
 type Screen = 'home' | 'lockscreen';
+
+const HomeScreen = React.lazy(() => (
+  import('./components/HomeScreen').then((module) => ({ default: module.HomeScreen }))
+));
 
 const STREAM_COMMIT_INTERVAL_MS = 100;
 const STREAM_COMMIT_MIN_DELTA = 100;
@@ -65,6 +83,49 @@ function repairStreamingHtml(partial: string): string {
   return s + closers + '</body></html>';
 }
 
+function attachMemoryToSnapshot(snapshot: ReturnType<typeof createDemoSignalSnapshot>, memory: UserMemoryState) {
+  const memoryPreferences = preferencesFromMemory(memory);
+  const defaultPriorities = snapshot.preferences?.priorityKinds ?? [];
+  const memoryPriorities = memoryPreferences.priorityKinds ?? [];
+
+  return {
+    ...snapshot,
+    preferences: {
+      ...snapshot.preferences,
+      ...memoryPreferences,
+      priorityKinds: Array.from(new Set([...memoryPriorities, ...defaultPriorities])),
+      avoidTones: Array.from(new Set([
+        ...(snapshot.preferences?.avoidTones ?? []),
+        ...(memoryPreferences.avoidTones ?? []),
+      ])),
+    },
+    recentRenders: renderHistoryFromMemory(memory),
+  };
+}
+
+function resolveSmartMomentFallback(memory: UserMemoryState): ResolvedMoment {
+  return resolveMoment(attachMemoryToSnapshot(createDemoSignalSnapshot(), memory));
+}
+
+async function resolveSmartMomentFromMemory(memory: UserMemoryState): Promise<ResolvedMoment> {
+  const baseSnapshot = createDemoSignalSnapshot();
+  const nativeSignals = await loadNativeSignals(baseSnapshot.now);
+  const snapshot = nativeSignals
+    ? {
+      ...baseSnapshot,
+      ...nativeSignals,
+      upcomingCalendar: nativeSignals.upcomingCalendar?.length
+        ? nativeSignals.upcomingCalendar
+        : baseSnapshot.upcomingCalendar,
+      notifications: nativeSignals.notifications?.length
+        ? nativeSignals.notifications
+        : baseSnapshot.notifications,
+    }
+    : baseSnapshot;
+
+  return resolveMoment(attachMemoryToSnapshot(snapshot, memory));
+}
+
 const App: React.FC = () => {
   const [keyReady, setKeyReady] = useState(() => hasApiKey());
   const [screen, setScreen] = useState<Screen>('lockscreen');
@@ -74,6 +135,11 @@ const App: React.FC = () => {
   const [sceneLabel, setSceneLabel] = useState<string>('');
   const [revealPhase, setRevealPhase] = useState<'idle' | 'blurred' | 'revealing'>('idle');
   const [sandboxSessionKey, setSandboxSessionKey] = useState(0);
+  const [userMemory, setUserMemory] = useState(() => loadUserMemory());
+  const [smartMoment, setSmartMoment] = useState(() => resolveSmartMomentFallback(loadUserMemory()));
+  const [activeMoment, setActiveMoment] = useState<ResolvedMoment | null>(null);
+  const [feedbackNotice, setFeedbackNotice] = useState<string>('');
+  const [signalStatus, setSignalStatus] = useState(UNAVAILABLE_SIGNAL_STATUS);
   const abortRef = useRef<AbortController | null>(null);
   const lastSandboxRuntimeRef = useRef<'stream' | 'prefab'>('stream');
 
@@ -81,6 +147,8 @@ const App: React.FC = () => {
     prompt: string,
     promptSource: PromptSource,
     prefabHtml?: string,
+    cacheMoment?: ResolvedMoment,
+    sceneLabelOverride?: string,
   ) => {
     console.log('[DEBUG] handleGenerate called, prefabHtml:', typeof prefabHtml, prefabHtml ? 'HAS_CONTENT_len=' + prefabHtml.length : 'UNDEFINED', 'prompt:', prompt.slice(0, 30));
     if (abortRef.current) {
@@ -98,7 +166,9 @@ const App: React.FC = () => {
     }
     lastSandboxRuntimeRef.current = nextSandboxRuntime;
     setScreen('lockscreen');
-    setSceneLabel(labelForPrompt(prompt, promptSource));
+    const nextSceneLabel = sceneLabelOverride ?? cacheMoment?.title ?? labelForPrompt(prompt, promptSource);
+    setSceneLabel(nextSceneLabel);
+    setActiveMoment(cacheMoment ?? null);
 
     // ── Prefab path: skip Gemini, render pre-generated HTML directly ──
     if (prefabHtml) {
@@ -108,6 +178,10 @@ const App: React.FC = () => {
         if (controller.signal.aborted) return;
         setRevealPhase('blurred');
         setHtmlContent(prefabHtml);
+        if (cacheMoment) saveCachedRender(cacheMoment, prefabHtml, nextSceneLabel);
+        if (cacheMoment) {
+          setUserMemory(recordMomentRendered(cacheMoment));
+        }
         setTimeout(() => {
           setRevealPhase('revealing');
           setTimeout(() => setRevealPhase('idle'), 700);
@@ -129,13 +203,15 @@ const App: React.FC = () => {
         if (controller.signal.aborted) return;
         console.log('[DEMO] flight reversal injected');
         controller.abort();
-        setRevealPhase('blurred');
-        setHtmlContent(FLIGHT_DELAY_DELTA_HTML);
-        setTimeout(() => {
-          setRevealPhase('revealing');
-          setTimeout(() => setRevealPhase('idle'), 700);
-        }, 50);
-        setIsLoading(false);
+        void import('./constants/flightDelta').then(({ FLIGHT_DELAY_DELTA_HTML }) => {
+          setRevealPhase('blurred');
+          setHtmlContent(FLIGHT_DELAY_DELTA_HTML);
+          setTimeout(() => {
+            setRevealPhase('revealing');
+            setTimeout(() => setRevealPhase('idle'), 700);
+          }, 50);
+          setIsLoading(false);
+        });
       }, 5200);
     }
 
@@ -221,6 +297,7 @@ const App: React.FC = () => {
     };
 
     try {
+      const { streamPageGeneration } = await import('./services/geminiService');
       const stream = streamPageGeneration(prompt, promptSource, controller.signal);
 
       for await (const chunk of stream) {
@@ -247,6 +324,10 @@ const App: React.FC = () => {
 
       if (!wasAborted) {
         commitHtml(fullHtml, true);
+        if (cacheMoment && !/Generation failed/i.test(fullHtml)) {
+          saveCachedRender(cacheMoment, fullHtml, nextSceneLabel);
+          setUserMemory(recordMomentRendered(cacheMoment));
+        }
         const totalGen = performance.now() - genStartTime;
         console.log(`[PERF] generation_complete total=${totalGen.toFixed(0)}ms final_html_len=${fullHtml.length}`);
       }
@@ -270,12 +351,98 @@ const App: React.FC = () => {
 
   const didBootRef = useRef(false);
 
+  const refreshSignalStatus = useCallback(async () => {
+    const nextStatus = await getNativeSignalStatus();
+    setSignalStatus(nextStatus);
+    return nextStatus;
+  }, []);
+
+  const refreshSmartMoment = useCallback(async () => {
+    const next = await resolveSmartMomentFromMemory(userMemory);
+    setSmartMoment(next);
+    return next;
+  }, [userMemory]);
+
+  const generateSmartMoment = useCallback(async () => {
+    const next = await refreshSmartMoment();
+    const cached = getCachedRender(next);
+    if (cached) {
+      if (abortRef.current) abortRef.current.abort();
+      setScreen('lockscreen');
+      setSceneLabel(cached.sceneLabel);
+      setHtmlContent(cached.html);
+      setIsLoading(false);
+      setActiveMoment(next);
+      setUserMemory(recordMomentRendered(next));
+      return Promise.resolve();
+    }
+    return handleGenerate(buildMomentPrompt(next), 'custom', undefined, next);
+  }, [handleGenerate, refreshSmartMoment]);
+
+  const handleMomentFeedback = useCallback((kind: MomentFeedbackKind) => {
+    if (!activeMoment) return;
+    const nextMemory = recordMomentFeedback(activeMoment, kind);
+    setUserMemory(nextMemory);
+    void resolveSmartMomentFromMemory(nextMemory).then(setSmartMoment);
+    if (kind !== 'useful') clearRenderCache();
+    setFeedbackNotice(kind === 'useful' ? '已记住：这类内容更有用' : '已记住：下次会调低这类呈现');
+    setTimeout(() => setFeedbackNotice(''), 1800);
+  }, [activeMoment]);
+
+  useEffect(() => {
+    if (!keyReady || didBootRef.current) return;
+    didBootRef.current = true;
+    const timer = setTimeout(() => {
+      void generateSmartMoment();
+    }, 350);
+    void refreshSignalStatus();
+    return () => clearTimeout(timer);
+  }, [generateSmartMoment, keyReady, refreshSignalStatus]);
+
+  useEffect(() => {
+    if (!keyReady) return;
+
+    const refreshOnForeground = () => {
+      if (document.visibilityState !== 'visible') return;
+      void refreshSignalStatus();
+      const now = new Date();
+      const hasFreshMoment = activeMoment && activeMoment.expiresAt.getTime() > now.getTime();
+      if (!hasFreshMoment) {
+        void generateSmartMoment();
+      }
+    };
+
+    document.addEventListener('visibilitychange', refreshOnForeground);
+    window.addEventListener('focus', refreshOnForeground);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshOnForeground);
+      window.removeEventListener('focus', refreshOnForeground);
+    };
+  }, [activeMoment, generateSmartMoment, keyReady, refreshSignalStatus]);
+
+  const handleRequestCalendar = useCallback(async () => {
+    setSignalStatus(await requestCalendarSignalPermission());
+    setSmartMoment(await resolveSmartMomentFromMemory(userMemory));
+  }, [userMemory]);
+
+  const handleOpenNotificationSettings = useCallback(async () => {
+    setSignalStatus(await openNotificationSignalSettings());
+  }, []);
+
   const handleResetApiKey = useCallback(() => {
     if (!confirm('要重置 API Key 吗？需要重新输入。')) return;
     if (abortRef.current) abortRef.current.abort();
     clearApiKey();
-    resetClient();
+    clearRenderCache();
+    clearUserMemory();
+    void import('./services/geminiService').then(({ resetClient }) => resetClient());
+    didBootRef.current = false;
     setSheetOpen(false);
+    setSceneLabel('');
+    setActiveMoment(null);
+    setFeedbackNotice('');
+    setUserMemory(loadUserMemory());
+    setHtmlContent(buildBridgeHtml(''));
     setKeyReady(false);
   }, []);
 
@@ -293,6 +460,9 @@ const App: React.FC = () => {
           revealPhase={revealPhase}
           sandboxSessionKey={sandboxSessionKey}
           sceneLabel={sceneLabel}
+          canGiveFeedback={Boolean(activeMoment) && !isLoading}
+          feedbackNotice={feedbackNotice}
+          onFeedback={handleMomentFeedback}
           onBack={handleBack}
         />
       </div>
@@ -300,13 +470,24 @@ const App: React.FC = () => {
       {sheetOpen && (
         <div className="app-sheet" onClick={() => setSheetOpen(false)}>
           <div className="app-sheet-panel" onClick={(e) => e.stopPropagation()}>
-            <HomeScreen
-              onGenerate={(prompt, source, prefabHtml) => {
-                setSheetOpen(false);
-                handleGenerate(prompt, source, prefabHtml);
-              }}
-              onResetApiKey={handleResetApiKey}
-            />
+            <React.Suspense fallback={null}>
+              <HomeScreen
+                smartMoment={smartMoment}
+                signalStatus={signalStatus}
+                onRequestCalendar={handleRequestCalendar}
+                onOpenNotificationSettings={handleOpenNotificationSettings}
+                onRefreshSignalStatus={() => void refreshSignalStatus()}
+                onSmartGenerate={() => {
+                  setSheetOpen(false);
+                  void generateSmartMoment();
+                }}
+                onGenerate={(prompt, source, prefabHtml, label) => {
+                  setSheetOpen(false);
+                  handleGenerate(prompt, source, prefabHtml, undefined, label);
+                }}
+                onResetApiKey={handleResetApiKey}
+              />
+            </React.Suspense>
           </div>
         </div>
       )}

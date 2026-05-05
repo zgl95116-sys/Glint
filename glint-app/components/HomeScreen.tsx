@@ -2,10 +2,18 @@ import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { PRESET_PROMPTS } from '../constants/prompts';
 import type { PresetPrompt } from '../constants/prompts';
 import type { PromptSource } from '../services/geminiService';
+import type { ResolvedMoment } from '../services/momentEngine';
+import type { NativeSignalStatus } from '../services/nativeSignals';
 import { GlintHaloMark } from './GlintHaloMark';
 
 interface HomeScreenProps {
-  onGenerate: (prompt: string, promptSource: PromptSource, prefabHtml?: string) => void;
+  smartMoment: ResolvedMoment;
+  signalStatus: NativeSignalStatus;
+  onRequestCalendar: () => void;
+  onOpenNotificationSettings: () => void;
+  onRefreshSignalStatus: () => void;
+  onSmartGenerate: () => void;
+  onGenerate: (prompt: string, promptSource: PromptSource, prefabHtml?: string, label?: string) => void;
   onResetApiKey?: () => void;
 }
 
@@ -235,12 +243,99 @@ const AmbientCard: React.FC<{ p: PresetPrompt; onPick: () => void }> = ({ p, onP
   );
 };
 
+const MOMENT_TONE: Record<ResolvedMoment['urgency'], string> = {
+  high: '需要行动',
+  medium: '值得留意',
+  low: '轻轻看一眼',
+};
+
+const SmartMomentCard: React.FC<{
+  moment: ResolvedMoment;
+  onGenerate: () => void;
+}> = ({ moment, onGenerate }) => (
+  <button type="button" className={`smart-moment smart-moment-${moment.urgency}`} onClick={onGenerate}>
+    <div className="smart-moment-orb" aria-hidden="true" />
+    <div className="smart-moment-main">
+      <div className="smart-moment-kicker">智能此刻 · {MOMENT_TONE[moment.urgency]}</div>
+      <div className="smart-moment-title">{moment.title}</div>
+      <div className="smart-moment-voice">{moment.voice}</div>
+      <div className="smart-moment-facts">
+        {moment.facts.slice(0, 2).map((fact) => (
+          <span key={fact}>{fact}</span>
+        ))}
+      </div>
+    </div>
+    <div className="smart-moment-arrow" aria-hidden="true">›</div>
+  </button>
+);
+
+function signalStateLabel(state: NativeSignalStatus['calendar'] | NativeSignalStatus['notificationAccess']): string {
+  if (state === 'granted') return '已连接';
+  if (state === 'prompt' || state === 'prompt-with-rationale') return '待授权';
+  if (state === 'unavailable') return 'Demo';
+  return '未连接';
+}
+
+const SignalStatusCard: React.FC<{
+  status: NativeSignalStatus;
+  onRequestCalendar: () => void;
+  onOpenNotificationSettings: () => void;
+  onRefresh: () => void;
+}> = ({ status, onRequestCalendar, onOpenNotificationSettings, onRefresh }) => (
+  <div className="signal-card">
+    <div className="signal-card-head">
+      <div>
+        <div className="signal-card-kicker">信号源</div>
+        <div className="signal-card-title">{status.isNative ? '手机上下文' : 'Demo 上下文'}</div>
+      </div>
+      <button type="button" className="signal-refresh" onClick={onRefresh}>刷新</button>
+    </div>
+
+    <div className="signal-list">
+      <div className="signal-row">
+        <div>
+          <div className="signal-name">日历</div>
+          <div className="signal-meta">{status.calendarCount} 个近期日程</div>
+        </div>
+        <button type="button" className="signal-action" onClick={onRequestCalendar}>
+          {signalStateLabel(status.calendar)}
+        </button>
+      </div>
+
+      <div className="signal-row">
+        <div>
+          <div className="signal-name">通知</div>
+          <div className="signal-meta">{status.notificationCount} 条近期信号</div>
+        </div>
+        <button type="button" className="signal-action" onClick={onOpenNotificationSettings}>
+          {signalStateLabel(status.notificationAccess)}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 /* ───────────────────────────────────────────────────────────
    HomeScreen — 三段式编辑型布局
    ─────────────────────────────────────────────────────────── */
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onGenerate, onResetApiKey }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({
+  smartMoment,
+  signalStatus,
+  onRequestCalendar,
+  onOpenNotificationSettings,
+  onRefreshSignalStatus,
+  onSmartGenerate,
+  onGenerate,
+  onResetApiKey,
+}) => {
   const [input, setInput] = useState('');
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('.app-sheet-panel')?.scrollTo({ top: 0 });
+    });
+  }, []);
 
   const { rhythm, events, ambient } = useMemo(() => ({
     rhythm: PRESET_PROMPTS.filter((p) => p.category === 'rhythm'),
@@ -258,7 +353,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onGenerate, onResetApiKe
     }
   };
 
-  const pick = (p: PresetPrompt) => onGenerate(p.prompt, 'preset', p.prefabHtml);
+  const pick = (p: PresetPrompt) => onGenerate(p.prompt, 'preset', p.prefabHtml, p.label);
 
   return (
     <div className="home-screen">
@@ -285,6 +380,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onGenerate, onResetApiKe
       <div className="home-title">你希望此刻的<br />屏幕是什么样？</div>
 
       <div className="home-sections">
+        <section className="home-section">
+          <SmartMomentCard moment={smartMoment} onGenerate={onSmartGenerate} />
+        </section>
+
+        <section className="home-section">
+          <SignalStatusCard
+            status={signalStatus}
+            onRequestCalendar={onRequestCalendar}
+            onOpenNotificationSettings={onOpenNotificationSettings}
+            onRefresh={onRefreshSignalStatus}
+          />
+        </section>
+
         {/* —— 节律 —— */}
         <section className="home-section">
           <div className="home-section-header">

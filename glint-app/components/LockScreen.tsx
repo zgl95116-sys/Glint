@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sandbox } from './Sandbox';
 import { GlintHaloMark } from './GlintHaloMark';
+import type { MomentFeedbackKind } from '../services/userMemory';
 
 interface LockScreenProps {
   htmlContent: string;
@@ -10,6 +11,9 @@ interface LockScreenProps {
   sandboxSessionKey: number;
   /** 当前正在展示的场景名（来自 preset.label 或自定义 prompt 摘要）；空 = 还没生成过 */
   sceneLabel?: string;
+  canGiveFeedback?: boolean;
+  feedbackNotice?: string;
+  onFeedback?: (kind: MomentFeedbackKind) => void;
   onBack: () => void;
 }
 
@@ -32,6 +36,9 @@ export const LockScreen: React.FC<LockScreenProps> = ({
   revealPhase,
   sandboxSessionKey,
   sceneLabel,
+  canGiveFeedback = false,
+  feedbackNotice = '',
+  onFeedback,
   onBack,
 }) => {
   // Status chip 的右侧文案：
@@ -67,6 +74,20 @@ export const LockScreen: React.FC<LockScreenProps> = ({
             <span className="lock-back-hint-text">{hint}</span>
           </span>
         </button>
+      )}
+
+      {canGiveFeedback && onFeedback && (
+        <div className="lock-feedback" aria-label="反馈当前锁屏">
+          <button type="button" onClick={() => onFeedback('useful')}>有用</button>
+          <button type="button" onClick={() => onFeedback('wrong_priority')}>不准</button>
+          <button type="button" onClick={() => onFeedback('too_noisy')}>太吵</button>
+        </div>
+      )}
+
+      {feedbackNotice && (
+        <div className="lock-feedback-toast" role="status">
+          {feedbackNotice}
+        </div>
       )}
     </div>
   );

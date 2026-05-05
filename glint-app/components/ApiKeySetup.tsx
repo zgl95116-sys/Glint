@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { setApiKey } from '../services/apiKeyStore';
-import { validateApiKey, onApiKeyReady } from '../services/geminiService';
 import { GlintHaloMark } from './GlintHaloMark';
 
 interface ApiKeySetupProps {
@@ -21,6 +20,7 @@ export const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onReady }) => {
     setPhase('validating');
     setError('');
     try {
+      const { validateApiKey, onApiKeyReady } = await import('../services/geminiService');
       await validateApiKey(key);
       setApiKey(key);
       onApiKeyReady();
